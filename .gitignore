@@ -1,0 +1,18 @@
+.env
+.env.*
+!.env.example
+.tmp.drivedownload/
+node_modules/
+.next/
+dist/
+build/
+.env
+.env.*
+!.env.example
+*.log
+Thumbs.db
+.DS_Store
+
+# Not part of this repo
+SwarmUI/
+**/SwarmUI/
