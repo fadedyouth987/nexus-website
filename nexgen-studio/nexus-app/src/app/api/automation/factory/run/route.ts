@@ -6,24 +6,19 @@ import type { FactoryPayload } from '@/lib/automation/pipeline/types'
 export async function POST(request: Request) {
   try {
     const { authUserId } = await requireBlueprintUser(request)
-    let body: FactoryPayload = {}
-    try {
-      body = await request.json()
-    } catch {
-      return NextResponse.json({ detail: 'Invalid JSON payload' }, { status: 400 })
-    }
-
+    const body = (await request.json().catch(() => ({}))) as FactoryPayload
     const result = await runInfluencerFactory(authUserId, body)
+
     return NextResponse.json(result)
   } catch (error) {
     const status =
       typeof (error as { status?: number }).status === 'number'
         ? (error as { status: number }).status
         : 500
+
     return NextResponse.json(
-      { detail: error instanceof Error ? error.message : 'Factory failed' },
+      { detail: error instanceof Error ? error.message : 'Factory run failed' },
       { status }
     )
   }
 }
-

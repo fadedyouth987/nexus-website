@@ -15,7 +15,8 @@ import {
   downloadAllAssets,
   type ComfyUIWorkflow,
 } from '@/lib/comfyui'
-import { buildWorkflow, defaultVariables, type VariableMap } from '@/lib/workflow-builder'
+import { buildWorkflow, defaultVariables } from '@/lib/workflow/builder'
+import type { VariableMap } from '@/lib/workflow/types'
 import { uploadOutputs } from '@/lib/comfyui/storage'
 import type { KnownModelId } from '@/lib/comfyui/models'
 import {

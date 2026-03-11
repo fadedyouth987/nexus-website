@@ -11,7 +11,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Sparkles, ArrowRight, UserPlus, ImageIcon, Share2, Zap } from 'lucide-react'
 
 type PlanRow = {
   id: string
@@ -316,6 +316,78 @@ export default function PlanResultPage() {
               ))}
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
+        <CardHeader>
+          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-primary">
+            <Sparkles className="h-3.5 w-3.5" />
+            Best next step
+          </div>
+          <CardTitle className="mt-2 text-xl">Turn your plan into action</CardTitle>
+          <CardDescription>
+            You have a 30-day content plan. Here is the recommended path to bring it to life.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <Link
+              href="/creators/create"
+              className="group rounded-xl border border-border bg-background p-4 transition-colors hover:border-primary/50 hover:bg-primary/5"
+            >
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <UserPlus className="h-5 w-5" />
+              </div>
+              <h4 className="mt-3 font-semibold text-foreground">1. Create creator</h4>
+              <p className="mt-1 text-xs text-muted-foreground">Set up the AI influencer persona</p>
+              <div className="mt-3 flex items-center text-xs font-medium text-primary">
+                Start <ArrowRight className="ml-1 h-3 w-3 transition-transform group-hover:translate-x-0.5" />
+              </div>
+            </Link>
+
+            <Link
+              href="/studio"
+              className="group rounded-xl border border-border bg-background p-4 transition-colors hover:border-primary/50 hover:bg-primary/5"
+            >
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <ImageIcon className="h-5 w-5" />
+              </div>
+              <h4 className="mt-3 font-semibold text-foreground">2. Generate content</h4>
+              <p className="mt-1 text-xs text-muted-foreground">Create images for your plan days</p>
+              <div className="mt-3 flex items-center text-xs font-medium text-primary">
+                Open Studio <ArrowRight className="ml-1 h-3 w-3 transition-transform group-hover:translate-x-0.5" />
+              </div>
+            </Link>
+
+            <Link
+              href="/dashboard/social"
+              className="group rounded-xl border border-border bg-background p-4 transition-colors hover:border-primary/50 hover:bg-primary/5"
+            >
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <Share2 className="h-5 w-5" />
+              </div>
+              <h4 className="mt-3 font-semibold text-foreground">3. Connect platforms</h4>
+              <p className="mt-1 text-xs text-muted-foreground">Link Instagram, TikTok, etc.</p>
+              <div className="mt-3 flex items-center text-xs font-medium text-primary">
+                Connect <ArrowRight className="ml-1 h-3 w-3 transition-transform group-hover:translate-x-0.5" />
+              </div>
+            </Link>
+
+            <Link
+              href="/automation/factory"
+              className="group rounded-xl border border-primary/30 bg-primary/5 p-4 transition-colors hover:bg-primary/10"
+            >
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                <Zap className="h-5 w-5" />
+              </div>
+              <h4 className="mt-3 font-semibold text-foreground">Or: Run full factory</h4>
+              <p className="mt-1 text-xs text-muted-foreground">Do steps 1-3 automatically</p>
+              <div className="mt-3 flex items-center text-xs font-medium text-primary">
+                Auto-setup <ArrowRight className="ml-1 h-3 w-3 transition-transform group-hover:translate-x-0.5" />
+              </div>
+            </Link>
+          </div>
         </CardContent>
       </Card>
 

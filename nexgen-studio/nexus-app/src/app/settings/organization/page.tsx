@@ -8,6 +8,7 @@ import apiFetch from '@/lib/core/api'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Loader2 } from 'lucide-react'
+import { PageHeader } from '@/components/layout/PageHeader'
 
 type OrgResponse = {
   id: string
@@ -63,22 +64,34 @@ export default function OrganizationSettingsPage() {
   }
 
   return (
-    <div className="grid gap-4">
+    <div className="space-y-6">
+      <PageHeader
+        title="Organization"
+        description="Manage the organization profile resolved from the tenancy-aware session and organization membership lookup."
+        breadcrumb={[
+          { label: 'Settings', href: '/settings' },
+          { label: 'Organization' },
+        ]}
+      />
+
       {error ? (
-        <Card className="border-red-200 bg-red-50">
-          <CardContent className="py-4 text-sm text-red-700">{error}</CardContent>
+        <Card className="border-destructive/40 bg-destructive/10">
+          <CardContent className="py-4">
+            <div className="app-callout app-callout-danger text-sm">{error}</div>
+          </CardContent>
         </Card>
       ) : null}
+
       <Card>
         <CardHeader>
           <CardTitle>Organization Profile</CardTitle>
           <CardDescription>Resolved from `org_members_v2` and server-side session checks.</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-2 text-sm text-foreground">
-          <div>Name: {org?.name || 'N/A'}</div>
-          <div>Organization ID: {org?.id || 'N/A'}</div>
-          <div className="capitalize">Your Role: {org?.role || 'N/A'}</div>
-          <div className="pt-2 flex gap-2">
+        <CardContent className="app-form-stack text-sm text-foreground">
+          <div className="app-callout app-callout-neutral">Name: {org?.name || 'N/A'}</div>
+          <div className="app-callout app-callout-neutral">Organization ID: {org?.id || 'N/A'}</div>
+          <div className="app-callout app-callout-neutral capitalize">Your Role: {org?.role || 'N/A'}</div>
+          <div className="flex flex-wrap gap-2 pt-2">
             <Button asChild size="sm" variant="outline">
               <Link href="/settings/billing">Open billing</Link>
             </Button>

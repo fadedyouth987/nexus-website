@@ -23,9 +23,9 @@ import { isPortfolioV2ClientEnabled } from '@/lib/core/featureFlags'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import { VaultModeToggle } from '@/components/vault/VaultModeToggle'
 import { useWorkspace } from '@/context/WorkspaceContext'
 import { AppHero } from '@/components/layout/AppHero'
+import { GettingStartedChecklist } from '@/components/onboarding/GettingStartedChecklist'
 
 type Influencer = {
   id: string
@@ -65,7 +65,7 @@ type MetricCardProps = {
 
 function DashboardMetricCard({ title, value, icon: Icon, href, eyebrow }: MetricCardProps) {
   const content = (
-    <div className="app-shell-panel-muted h-full p-5">
+    <div className="app-surface-card h-full p-5">
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
@@ -103,7 +103,7 @@ function LoadingDashboard() {
           <Skeleton className="h-24 rounded-[22px]" />
         </div>
       </div>
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="app-stat-grid xl:grid-cols-3">
         {[1, 2, 3, 4, 5, 6].map((item) => (
           <Skeleton key={item} className="h-36 rounded-[24px]" />
         ))}
@@ -210,10 +210,13 @@ function LegacyDashboardPage() {
                 Open Studio
               </Link>
             </Button>
-            <Button asChild variant="outline" size="lg" className="gap-2">
-              <Link href="/automation">
+            <Button asChild size="lg" className="relative gap-2">
+              <Link href="/automation/factory">
                 <Zap className="h-4 w-4" />
-                Automation
+                AI Factory
+                <span className="absolute -right-2 -top-2 flex h-5 items-center rounded-full bg-emerald-500 px-2 text-[10px] font-bold text-white">
+                  Best
+                </span>
               </Link>
             </Button>
             <Button asChild variant="outline" size="lg" className="gap-2">
@@ -241,7 +244,7 @@ function LegacyDashboardPage() {
         }
       />
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="app-stat-grid xl:grid-cols-3">
         <DashboardMetricCard title="Creators in the workspace" value={stats.creators} icon={Users} href="/creators" eyebrow="Roster" />
         <DashboardMetricCard title="Published or queued content" value={stats.posts} icon={ImageIcon} href="/gallery" eyebrow="Content" />
         <DashboardMetricCard title="Scheduled posts ready to ship" value={stats.scheduled} icon={Calendar} href="/calendar" eyebrow="Schedule" />
@@ -251,18 +254,7 @@ function LegacyDashboardPage() {
       </div>
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,0.72fr)_minmax(0,1fr)]">
-        <div className="app-shell-panel-muted p-5">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div>
-              <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-primary">Getting started</div>
-              <h2 className="mt-2 text-xl font-semibold tracking-tight text-foreground">Move from creator setup to launch</h2>
-              <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">
-                Create an influencer in Studio, build an automation flow, then route finished work into Gallery and calendar. Vault is still available when you need gated flows.
-              </p>
-            </div>
-            <VaultModeToggle />
-          </div>
-        </div>
+        <GettingStartedChecklist />
 
         <Card className="overflow-hidden">
           <CardHeader>
@@ -273,7 +265,7 @@ function LegacyDashboardPage() {
             {influencers.length > 0 ? (
               <ul className="space-y-3">
                 {influencers.slice(0, 5).map((influencer) => (
-                  <li key={influencer.id} className="rounded-2xl border border-border/70 bg-background/70 px-4 py-3">
+                  <li key={influencer.id} className="app-callout app-callout-neutral">
                     <Link href={`/influencers/${influencer.id}`} className="text-sm font-medium text-foreground hover:text-primary">
                       {influencer.name}
                     </Link>
@@ -385,7 +377,9 @@ function PortfolioV2Page() {
 
       {error ? (
         <Card className="border-destructive/40 bg-destructive/10">
-          <CardContent className="py-4 text-sm text-destructive">{error}</CardContent>
+          <CardContent className="py-4">
+            <div className="app-callout app-callout-danger text-sm">{error}</div>
+          </CardContent>
         </Card>
       ) : null}
 
@@ -400,7 +394,7 @@ function PortfolioV2Page() {
               <p className="text-sm text-muted-foreground">No workspaces available for this account.</p>
             ) : (
               workspaces.map((workspace) => (
-                <div key={workspace.id} className="rounded-2xl border border-border/70 bg-background/70 px-4 py-3">
+                <div key={workspace.id} className="app-callout app-callout-neutral">
                   <div className="font-medium text-foreground">{workspace.name}</div>
                   <div className="mt-1 text-xs text-muted-foreground">
                     Role: {workspace.role} | Client visible: {workspace.client_visible ? 'Yes' : 'No'}
@@ -417,9 +411,9 @@ function PortfolioV2Page() {
             <CardDescription>Safe strangler path from here.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3 text-sm text-muted-foreground">
-            <div className="rounded-2xl border border-border/70 bg-background/70 px-4 py-3">Add `/api/content` backed by `content_v2`.</div>
-            <div className="rounded-2xl border border-border/70 bg-background/70 px-4 py-3">Add `/api/portfolio` aggregate metrics instead of client fan-out.</div>
-            <div className="rounded-2xl border border-border/70 bg-background/70 px-4 py-3">Move Calendar onto `schedules_v2`.</div>
+            <div className="app-callout app-callout-neutral">Add `/api/content` backed by `content_v2`.</div>
+            <div className="app-callout app-callout-neutral">Add `/api/portfolio` aggregate metrics instead of client fan-out.</div>
+            <div className="app-callout app-callout-neutral">Move Calendar onto `schedules_v2`.</div>
           </CardContent>
         </Card>
       </div>

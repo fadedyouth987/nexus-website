@@ -1,57 +1,54 @@
 import { NextResponse } from 'next/server'
-import { getToken } from 'next-auth/jwt'
+import { requireBlueprintUser } from '@/lib/blueprint/auth'
 import { getEngineSupabaseAdmin } from '@/lib/engine/supabaseAdmin'
-import { getSchedulerService } from '@/lib/automation/services/scheduler'
+import { runPipeline } from '@/lib/automation/pipeline/runner'
+import { queueToSchedulerStep } from '@/lib/automation/pipeline/steps/queueToScheduler'
+import { createInfluencerPipelineContext } from '@/lib/automation/orchestrators/influencerFactory'
 
-async function getUserId(request: Request): Promise<string | null> {
-  const token = await getToken({
-    req: request as any,
-    secret: process.env.NEXTAUTH_SECRET || 'your-secret-key-change-this',
-  })
-  return (typeof token?.sub === 'string' ? token.sub : null) ?? (typeof token?.id === 'string' ? token.id : null)
+type QueueSchedulerPayload = {
+  planId?: string
+  orgId?: string
+  workspaceId?: string
+  creatorId?: string
 }
 
-export async function POST(
-  request: Request,
-  context: { params: Promise<{ id: string }> }
-) {
+export async function POST(request: Request) {
   try {
-    const userId = await getUserId(request)
-    if (!userId) {
-      return NextResponse.json({ detail: 'Unauthorized' }, { status: 401 })
-    }
+    const { authUserId } = await requireBlueprintUser(request)
+    const body = (await request.json().catch(() => ({}))) as QueueSchedulerPayload
+    const planId = String(body.planId || '').trim()
 
-    const { id: planId } = await context.params
-    const body = (await request.json().catch(() => ({}))) as {
-      orgId?: string
-      workspaceId?: string
-      creatorId?: string
+    if (!planId) {
+      return NextResponse.json({ detail: 'planId is required' }, { status: 400 })
     }
-    let orgId = String(body.orgId || '').trim()
-    let workspaceId = String(body.workspaceId || '').trim()
-    let creatorId = String(body.creatorId || '').trim()
 
     const admin = getEngineSupabaseAdmin()
     const { data: plan } = await admin
       .from('planner_plans')
       .select('id')
       .eq('id', planId)
-      .eq('user_id', userId)
+      .eq('user_id', authUserId)
       .maybeSingle()
+
     if (!plan) {
       return NextResponse.json({ detail: 'Plan not found' }, { status: 404 })
     }
+
+    let orgId = String(body.orgId || '').trim()
+    let workspaceId = String(body.workspaceId || '').trim()
+    let creatorId = String(body.creatorId || '').trim()
 
     if (!orgId) {
       const { data: orgMembership } = await admin
         .from('org_members_v2')
         .select('org_id')
-        .eq('user_id', userId)
+        .eq('user_id', authUserId)
         .order('created_at', { ascending: true })
         .limit(1)
         .maybeSingle()
       orgId = String(orgMembership?.org_id || '')
     }
+
     if (!orgId) {
       return NextResponse.json({ detail: 'No organization found for user' }, { status: 400 })
     }
@@ -61,12 +58,13 @@ export async function POST(
         .from('workspace_members_v2')
         .select('workspace_id')
         .eq('org_id', orgId)
-        .eq('user_id', userId)
+        .eq('user_id', authUserId)
         .order('created_at', { ascending: true })
         .limit(1)
         .maybeSingle()
       workspaceId = String(workspaceMembership?.workspace_id || '')
     }
+
     if (!workspaceId) {
       return NextResponse.json({ detail: 'No workspace found for user organization' }, { status: 400 })
     }
@@ -82,6 +80,7 @@ export async function POST(
         .maybeSingle()
       creatorId = String(creatorRow?.id || '')
     }
+
     if (!creatorId) {
       return NextResponse.json({ detail: 'No creator found in target workspace' }, { status: 400 })
     }
@@ -93,28 +92,39 @@ export async function POST(
       .eq('org_id', orgId)
       .eq('workspace_id', workspaceId)
       .maybeSingle()
+
     if (!creator) {
       return NextResponse.json({ detail: 'Creator not found for org/workspace' }, { status: 404 })
     }
 
-    const schedulerService = getSchedulerService()
-    const queued = await schedulerService.queuePlannerToScheduler({
-      userId,
-      planId,
-      orgId,
-      workspaceId,
-      creatorId,
-    })
+    const result = await runPipeline(
+      [queueToSchedulerStep()],
+      createInfluencerPipelineContext(authUserId, {}, {
+        planId,
+        creator: {
+          id: creatorId,
+          mode: 'v2',
+          orgId,
+          workspaceId,
+        },
+      })
+    )
+
     return NextResponse.json({
       ok: true,
       planId,
-      ...queued,
+      ...result.context.schedulerQueue,
+      reports: result.reports.map((report) => ({ name: report.name, status: report.status })),
     })
   } catch (error) {
+    const status =
+      typeof (error as { status?: number }).status === 'number'
+        ? (error as { status: number }).status
+        : 500
+
     return NextResponse.json(
-      { detail: error instanceof Error ? error.message : 'Failed to queue planner items' },
-      { status: 500 }
+      { detail: error instanceof Error ? error.message : 'Queue scheduler step failed' },
+      { status }
     )
   }
 }
-
