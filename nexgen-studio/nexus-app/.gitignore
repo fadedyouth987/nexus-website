@@ -5,3 +5,8 @@
 node_modules
 tsconfig.tsbuildinfo
 tools/baseline/
+
+# OpenClaw local state
+.openclaw-state/
+.openclaw-state
+
