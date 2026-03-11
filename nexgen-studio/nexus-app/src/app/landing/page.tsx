@@ -207,8 +207,24 @@ export default function LandingPage() {
 
       <section className="border-t border-border bg-muted/20 py-12">
         <div className="app-page-shell text-center">
-          <h2 className="text-xl font-semibold">Trusted by creators and agencies</h2>
-          <p className="mt-3 text-sm text-muted-foreground">Logos and testimonials go here.</p>
+          <h2 className="text-xl font-semibold">Built for creators who scale</h2>
+          <p className="mt-3 text-sm text-muted-foreground max-w-xl mx-auto">
+            From solo influencers to multi-creator agencies, NexGen Studio provides the complete operating system for AI-driven content creation, scheduling, and monetization.
+          </p>
+          <div className="mt-6 flex items-center justify-center gap-8 text-muted-foreground">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-foreground">12+</div>
+              <div className="text-xs">Platforms supported</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-foreground">24/7</div>
+              <div className="text-xs">Content automation</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-foreground">GPU</div>
+              <div className="text-xs">Accelerated generation</div>
+            </div>
+          </div>
         </div>
       </section>
 

@@ -1,5 +1,5 @@
-import DashboardSocialPage from '@/app/dashboard/social/page'
+import { redirect } from 'next/navigation'
 
 export default function SocialPage() {
-  return <DashboardSocialPage />
+  redirect('/socials')
 }

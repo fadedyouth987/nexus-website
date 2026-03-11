@@ -106,8 +106,34 @@ export default function InboxPage() {
     }
   }
 
-  const handleAiSuggestedReply = () => {
-    setMessage('Hello! I appreciate your kind words! How are you doing today? (AI Suggested)')
+  const [aiLoading, setAiLoading] = useState(false)
+  const handleAiSuggestedReply = async () => {
+    const context = messages.slice(-5).map((m) => `${m.sender}: ${m.message}`).join('\n')
+    if (!context.trim()) {
+      setMessage('Hi there! Thanks for reaching out. How can I help you today?')
+      return
+    }
+    setAiLoading(true)
+    try {
+      const res = await fetch('/api/llm/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          message: `You are an AI influencer's assistant. Based on this conversation, suggest a friendly, engaging reply:\n\n${context}\n\nSuggest a concise reply:`,
+        }),
+      })
+      if (res.ok) {
+        const data = (await res.json()) as { reply?: string }
+        setMessage(data.reply || 'Thanks for your message! I appreciate your support.')
+      } else {
+        setMessage('Thanks for your message! I appreciate your support.')
+      }
+    } catch {
+      setMessage('Thanks for your message! I appreciate your support.')
+    } finally {
+      setAiLoading(false)
+    }
   }
 
   return (
@@ -285,11 +311,11 @@ export default function InboxPage() {
                 variant="outline"
                 size="sm"
                 className="w-fit self-end flex items-center gap-2"
-                onClick={handleAiSuggestedReply}
-                disabled={!selectedAccount}
+                onClick={() => void handleAiSuggestedReply()}
+                disabled={!selectedAccount || aiLoading}
               >
                 <Sparkles className="h-4 w-4" />
-                AI Suggested Reply
+                {aiLoading ? 'Thinking...' : 'AI Suggested Reply'}
               </Button>
               <div className="flex items-center gap-2">
                 <Textarea

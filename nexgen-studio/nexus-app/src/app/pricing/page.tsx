@@ -19,7 +19,7 @@ type PublicPlan = {
 const publicPlans: readonly PublicPlan[] = [
   {
     id: 'tier1',
-    title: 'Tier 1',
+    title: 'Tier 1: Starter',
     description: 'For solo operators validating one creator workflow.',
     price: TIER_PLANS.tier1.monthlyPrice,
     features: [
@@ -32,7 +32,7 @@ const publicPlans: readonly PublicPlan[] = [
   },
   {
     id: 'tier2',
-    title: 'Tier 2',
+    title: 'Tier 2: Pro',
     description: 'For creators running a fuller production and publishing cycle.',
     price: TIER_PLANS.tier2.monthlyPrice,
     highlighted: true,
@@ -47,7 +47,7 @@ const publicPlans: readonly PublicPlan[] = [
   },
   {
     id: 'tier3',
-    title: 'Tier 3',
+    title: 'Tier 3: Vault',
     description: 'For agencies and multi-creator teams.',
     price: TIER_PLANS.tier3.monthlyPrice,
     features: [
@@ -170,9 +170,9 @@ function FeatureComparison() {
           <thead>
             <tr className="border-b border-white/10">
               <th className="p-4">Feature</th>
-              <th className="p-4">Tier 1</th>
-              <th className="p-4">Tier 2</th>
-              <th className="p-4">Tier 3</th>
+              <th className="p-4">Tier 1 (Starter)</th>
+              <th className="p-4">Tier 2 (Pro)</th>
+              <th className="p-4">Tier 3 (Vault)</th>
             </tr>
           </thead>
           <tbody>

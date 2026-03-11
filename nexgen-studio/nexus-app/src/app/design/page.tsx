@@ -1,24 +1,63 @@
 'use client'
 
-import { PageHeader } from '@/components/layout/PageHeader'
+import { AppHero } from '@/components/layout/AppHero'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, Brush, LayoutTemplate, Palette, Sparkles, CheckCircle2 } from 'lucide-react'
+import { Brush, LayoutTemplate, Palette, Sparkles, CheckCircle2, Save } from 'lucide-react'
 import { Input } from '@/components/ui/input'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+
+const DESIGN_STORAGE_KEY = 'nexus_brand_settings_v1'
+
+type BrandSettings = {
+  brandTone: string
+  captionStyle: string
+  selectedPreset: string
+  selectedFormats: string[]
+}
+
+function loadBrandSettings(): BrandSettings {
+  if (typeof window === 'undefined') return { brandTone: '', captionStyle: '', selectedPreset: 'viral-shortform', selectedFormats: ['9:16', '1:1'] }
+  try {
+    const raw = window.localStorage.getItem(DESIGN_STORAGE_KEY)
+    if (!raw) return { brandTone: '', captionStyle: '', selectedPreset: 'viral-shortform', selectedFormats: ['9:16', '1:1'] }
+    return JSON.parse(raw) as BrandSettings
+  } catch {
+    return { brandTone: '', captionStyle: '', selectedPreset: 'viral-shortform', selectedFormats: ['9:16', '1:1'] }
+  }
+}
+
+function saveBrandSettings(settings: BrandSettings) {
+  try {
+    window.localStorage.setItem(DESIGN_STORAGE_KEY, JSON.stringify(settings))
+  } catch { /* ignore */ }
+}
 
 export default function DesignPage() {
-  const [brandTone, setBrandTone] = useState('Confident, witty, premium')
-  const [captionStyle, setCaptionStyle] = useState('Short hooks, 1 CTA, emoji-light')
+  const [brandTone, setBrandTone] = useState('')
+  const [captionStyle, setCaptionStyle] = useState('')
   const [selectedPreset, setSelectedPreset] = useState('viral-shortform')
   const [selectedFormats, setSelectedFormats] = useState<string[]>(['9:16', '1:1'])
+  const [saved, setSaved] = useState(false)
   const [checklist, setChecklist] = useState({
     hook: true,
     cta: true,
     policy: true,
     brand: false,
   })
+
+  useEffect(() => {
+    const settings = loadBrandSettings()
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (settings.brandTone) setBrandTone(settings.brandTone)
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (settings.captionStyle) setCaptionStyle(settings.captionStyle)
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (settings.selectedPreset) setSelectedPreset(settings.selectedPreset)
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (settings.selectedFormats?.length) setSelectedFormats(settings.selectedFormats)
+  }, [])
 
   function toggleFormat(value: string) {
     setSelectedFormats((prev) =>
@@ -30,24 +69,28 @@ export default function DesignPage() {
     setChecklist((prev) => ({ ...prev, [key]: !prev[key] }))
   }
 
+  function handleSave() {
+    saveBrandSettings({ brandTone, captionStyle, selectedPreset, selectedFormats })
+    setSaved(true)
+    setTimeout(() => setSaved(false), 2000)
+  }
+
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Design"
-        description="Build consistent visual systems for creators, not one-off assets."
-        breadcrumb={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Studio', href: '/studio' }, { label: 'Design' }]}
+    <div className="space-y-[var(--section-gap)]">
+      <AppHero
+        eyebrow="Creation"
+        title="Design System"
+        description="Build consistent visual systems for your creators. Set brand rules once and apply them across generation, editing, and publishing."
         actions={
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" asChild>
-              <Link href="/studio" className="flex items-center gap-2">
-                <ArrowLeft className="h-4 w-4" />
-                Back to Studio
-              </Link>
+          <>
+            <Button size="lg" className="gap-2" onClick={handleSave}>
+              <Save className="h-4 w-4" />
+              {saved ? 'Saved!' : 'Save settings'}
             </Button>
-            <Button size="sm" asChild>
-              <Link href="/edit">Open editor</Link>
+            <Button variant="outline" size="lg" asChild>
+              <Link href="/studio">Back to Studio</Link>
             </Button>
-          </div>
+          </>
         }
       />
 

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { PageHeader } from '@/components/layout/PageHeader'
+import { AppHero } from '@/components/layout/AppHero'
 import { useWorkspace } from '@/context/WorkspaceContext'
 import apiFetch from '@/lib/core/api'
 import {
@@ -207,6 +207,8 @@ export default function EditPage() {
   const [assetName, setAssetName] = useState<string | null>(null)
   const [assetType, setAssetType] = useState<'image' | 'video'>('image')
   const [activeAssetId, setActiveAssetId] = useState<string | null>(null)
+  const [assetPreviewUrl, setAssetPreviewUrl] = useState<string | null>(null)
+  const [uploadPreviewUrl, setUploadPreviewUrl] = useState<string | null>(null)
   const [galleryAssets, setGalleryAssets] = useState<GalleryAsset[]>([])
   const [batchAssetIds, setBatchAssetIds] = useState<string[]>([])
   const [batchMode, setBatchMode] = useState(false)
@@ -232,6 +234,9 @@ export default function EditPage() {
       setAssetName(file.name)
       setAssetType(file.type.startsWith('video/') ? 'video' : 'image')
       setActiveAssetId(`upload:${file.name}:${Date.now()}`)
+      setAssetPreviewUrl(null)
+      if (uploadPreviewUrl) URL.revokeObjectURL(uploadPreviewUrl)
+      setUploadPreviewUrl(URL.createObjectURL(file))
       setEditMessage('Asset loaded. Choose tools and apply edits.')
     }
     e.target.value = ''
@@ -264,6 +269,26 @@ export default function EditPage() {
       cancelled = true
     }
   }, [currentWorkspace?.id, activeAssetId])
+
+  useEffect(() => {
+    if (!activeAssetId || activeAssetId.startsWith('upload:')) {
+      setAssetPreviewUrl(null)
+      return
+    }
+    let cancelled = false
+    async function fetchUrl() {
+      try {
+        const res = await apiFetch(`/assets/${activeAssetId}/signed-url`)
+        if (!res.ok || cancelled) return
+        const data = (await res.json()) as { signedUrl?: string }
+        if (!cancelled && data.signedUrl) setAssetPreviewUrl(data.signedUrl)
+      } catch {
+        if (!cancelled) setAssetPreviewUrl(null)
+      }
+    }
+    void fetchUrl()
+    return () => { cancelled = true }
+  }, [activeAssetId])
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -391,24 +416,26 @@ export default function EditPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <PageHeader
+    <div className="space-y-[var(--section-gap)]">
+      <AppHero
+        eyebrow="Creation"
         title="Edit"
-        description="Daily creator workflow: generate, edit, batch refine, and publish with plan-aware limits for solo creators through agency teams."
-        breadcrumb={[
-          { label: 'Dashboard', href: '/dashboard' },
-          { label: 'Edit' },
-        ]}
+        description="Refine, enhance, and batch-process your generated content. Apply face fixes, background swaps, upscaling, and more."
         actions={
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" asChild>
+          <>
+            <Button variant="outline" size="lg" asChild>
               <Link href="/gallery">From Gallery</Link>
             </Button>
-            <Button size="sm" asChild>
+            <Button size="lg" asChild>
               <Link href="/studio">Generate first</Link>
             </Button>
-          </div>
+          </>
         }
+        metrics={[
+          { label: 'Applied', value: appliedCount },
+          { label: 'Queued', value: queuedCount },
+          { label: 'Tier', value: activeTier.title },
+        ]}
       />
 
       <div className="flex min-h-[60vh] flex-col overflow-hidden rounded-lg border border-border bg-background">
@@ -587,15 +614,24 @@ export default function EditPage() {
               >
                 {hasAsset ? (
                   <>
-                    <p className="text-sm text-foreground">Canvas</p>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      Your asset is loaded. Use the right panel to apply edits.
+                    {(assetPreviewUrl || uploadPreviewUrl) ? (
+                      <div className="w-full max-w-2xl">
+                        {assetType === 'video' ? (
+                          <video src={assetPreviewUrl || uploadPreviewUrl || ''} controls className="w-full rounded-lg" />
+                        ) : (
+                          <img src={assetPreviewUrl || uploadPreviewUrl || ''} alt={assetName || 'Asset'} className="w-full rounded-lg" />
+                        )}
+                      </div>
+                    ) : (
+                      <div className="flex h-48 w-64 items-center justify-center rounded-md border border-border bg-muted/80 text-xs text-muted-foreground">
+                        Loading preview...
+                      </div>
+                    )}
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      {assetName || 'Asset loaded'} — Use the right panel to apply edits.
                     </p>
                     <div className="mt-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-1.5 text-[11px] text-amber-900 dark:text-amber-200">
                       Edit compute backend is in beta. UI history and queue are active; heavy transforms may return pending status.
-                    </div>
-                    <div className="mt-4 flex h-48 w-64 items-center justify-center rounded-md border border-border bg-muted/80 text-xs text-muted-foreground">
-                      Preview
                     </div>
                   </>
                 ) : (

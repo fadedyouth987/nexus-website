@@ -1,0 +1,16 @@
+{
+  "projectId": "prj_zXwQJswNz3l6tIlzKRxxGLTcH1fh",
+  "orgId": "team_W4FgHnEUkknVYp7SN3B2kjx2",
+  "projectName": "nexus-website",
+  "settings": {
+    "createdAt": 1773230681006,
+    "framework": null,
+    "devCommand": null,
+    "installCommand": null,
+    "buildCommand": null,
+    "outputDirectory": null,
+    "rootDirectory": null,
+    "directoryListing": false,
+    "nodeVersion": "24.x"
+  }
+}

@@ -1,5 +1,5 @@
 export type TierPlanId = 'tier1' | 'tier2' | 'tier3' | 'enterprise'
-export type PlanTier = 'STARTER' | 'PRO' | 'ENTERPRISE'
+export type PlanTier = 'STARTER' | 'PRO' | 'VAULT' | 'ENTERPRISE'
 
 export type TierPlan = {
   id: TierPlanId
@@ -41,7 +41,7 @@ export const TIER_PLANS: Record<TierPlanId, TierPlan> = {
     monthlyTokens: 7000,
     storageGb: 1500,
     teamSeats: '3-15',
-    planTier: 'ENTERPRISE',
+    planTier: 'VAULT',
   },
   enterprise: {
     id: 'enterprise',

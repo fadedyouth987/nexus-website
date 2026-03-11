@@ -3,13 +3,14 @@
 import { useEffect, useMemo, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Download, ExternalLink, Images, Share2, Video } from 'lucide-react'
+import { Calendar, Download, ExternalLink, Images, Share2, Video } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { useWorkspace } from '@/context/WorkspaceContext'
 import apiFetch from '@/lib/core/api'
 import { AppHero } from '@/components/layout/AppHero'
+import { NextStepBanner } from '@/components/layout/NextStepBanner'
 
 type Asset = {
   id: string
@@ -27,6 +28,7 @@ type FilterType = 'all' | 'image' | 'video'
 export default function GalleryPage() {
   const { currentWorkspace } = useWorkspace()
   const [assets, setAssets] = useState<Asset[]>([])
+  const [signedUrls, setSignedUrls] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(true)
   const [typeFilter, setTypeFilter] = useState<FilterType>('all')
   const [influencerFilter, setInfluencerFilter] = useState<string>('all')
@@ -78,7 +80,22 @@ export default function GalleryPage() {
         const sfwOnly = list.filter(
           (asset) => asset.sfw_status === 'sfw' || asset.sfw_status === 'SFW' || !asset.sfw_status
         )
-        if (!cancelled) setAssets(sfwOnly)
+        if (!cancelled) {
+          setAssets(sfwOnly)
+          const urls: Record<string, string> = {}
+          const urlResults = await Promise.allSettled(
+            sfwOnly.slice(0, 50).map(async (a) => {
+              const r = await apiFetch(`/assets/${a.id}/signed-url`)
+              if (!r.ok) return null
+              const d = (await r.json()) as { signedUrl?: string }
+              return d.signedUrl ? { id: a.id, url: d.signedUrl } : null
+            })
+          )
+          for (const r of urlResults) {
+            if (r.status === 'fulfilled' && r.value) urls[r.value.id] = r.value.url
+          }
+          if (!cancelled) setSignedUrls(urls)
+        }
       } catch {
         if (!cancelled) setAssets([])
       } finally {
@@ -160,7 +177,7 @@ export default function GalleryPage() {
                   <option value="all">All</option>
                   {influencerIds.map((id) => (
                     <option key={id} value={id}>
-                      {id.slice(0, 8)}...
+                      Creator {id.slice(0, 8)}
                     </option>
                   ))}
                 </select>
@@ -172,9 +189,9 @@ export default function GalleryPage() {
             {filteredAssets.map((asset) => (
               <Card key={asset.id} className="overflow-hidden">
                 <div className="aspect-square bg-muted/30 flex items-center justify-center relative">
-                  {asset.thumbnail_path ? (
+                  {(signedUrls[asset.id] || asset.thumbnail_path) ? (
                     <img
-                      src={asset.thumbnail_path}
+                      src={signedUrls[asset.id] || asset.thumbnail_path || ''}
                       alt=""
                       className="h-full w-full cursor-pointer object-cover"
                       onClick={() => setLightboxAsset(asset)}
@@ -183,31 +200,32 @@ export default function GalleryPage() {
                     <Images className="h-10 w-10 text-muted-foreground" />
                   )}
                 </div>
-                <CardContent className="flex items-center justify-between gap-1 p-3">
-                  <p className="truncate text-xs text-muted-foreground">
-                    {asset.type === 'VIDEO' || asset.type === 'video' ? (
-                      <span className="inline-flex items-center gap-1">
-                        <Video className="h-3 w-3" /> Video
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1">
-                        <Images className="h-3 w-3" /> Image
-                      </span>
-                    )}
-                  </p>
-                  <div className="flex gap-0.5 shrink-0">
-                    {asset.storage_path ? (
-                      <>
-                        <Button variant="ghost" size="icon" className="h-8 w-8" title="View full size" asChild>
-                          <a href={asset.storage_path} target="_blank" rel="noopener noreferrer">
-                            <ExternalLink className="h-3.5 w-3.5" />
-                          </a>
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8" title="Download" asChild>
-                          <a href={asset.storage_path} download target="_blank" rel="noopener noreferrer">
-                            <Download className="h-3.5 w-3.5" />
-                          </a>
-                        </Button>
+                <CardContent className="p-3 space-y-2">
+                  <div className="flex items-center justify-between gap-1">
+                    <p className="truncate text-xs text-muted-foreground">
+                      {asset.type === 'VIDEO' || asset.type === 'video' ? (
+                        <span className="inline-flex items-center gap-1">
+                          <Video className="h-3 w-3" /> Video
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1">
+                          <Images className="h-3 w-3" /> Image
+                        </span>
+                      )}
+                    </p>
+                    <div className="flex gap-0.5 shrink-0">
+                      {(signedUrls[asset.id] || asset.storage_path) ? (
+                        <>
+                          <Button variant="ghost" size="icon" className="h-8 w-8" title="View full size" asChild>
+                            <a href={signedUrls[asset.id] || asset.storage_path || ''} target="_blank" rel="noopener noreferrer">
+                              <ExternalLink className="h-3.5 w-3.5" />
+                            </a>
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8" title="Download" asChild>
+                            <a href={signedUrls[asset.id] || asset.storage_path || ''} download target="_blank" rel="noopener noreferrer">
+                              <Download className="h-3.5 w-3.5" />
+                            </a>
+                          </Button>
                         <Button
                           variant="ghost"
                           size="icon"
@@ -217,15 +235,24 @@ export default function GalleryPage() {
                         >
                           <Share2 className="h-3.5 w-3.5" />
                         </Button>
-                      </>
-                    ) : null}
+                        </>
+                      ) : null}
+                    </div>
+                  </div>
+                  <div className="flex gap-1">
+                    <Button size="sm" variant="ghost" className="flex-1 text-[11px] h-7" asChild>
+                      <Link href={`/edit?assetId=${asset.id}`}>Edit</Link>
+                    </Button>
+                    <Button size="sm" variant="ghost" className="flex-1 text-[11px] h-7" asChild>
+                      <Link href="/automation/planner">Schedule</Link>
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
             ))}
           </div>
 
-          {lightboxAsset && lightboxAsset.storage_path ? (
+          {lightboxAsset && (signedUrls[lightboxAsset.id] || lightboxAsset.storage_path) ? (
             <div
               className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
               onClick={() => setLightboxAsset(null)}
@@ -234,7 +261,7 @@ export default function GalleryPage() {
               aria-label="View full size"
             >
               <img
-                src={lightboxAsset.storage_path}
+                src={signedUrls[lightboxAsset.id] || lightboxAsset.storage_path || ''}
                 alt=""
                 className="max-h-full max-w-full object-contain"
                 onClick={(e) => e.stopPropagation()}
@@ -243,6 +270,8 @@ export default function GalleryPage() {
           ) : null}
         </>
       )}
+
+      <NextStepBanner currentPhase={3} nextLabel="Schedule your content" nextHref="/calendar" nextIcon={Calendar} />
     </div>
   )
 }

@@ -1,10 +1,12 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import Link from 'next/link'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import apiFetch from '@/lib/core/api'
 import { useWorkspace } from '@/context/WorkspaceContext'
+import { AppHero } from '@/components/layout/AppHero'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import {
@@ -166,8 +168,21 @@ export default function ProductionPage() {
     }
   }, [])
 
+  // #region agent log
+  const debugLog = useCallback(
+    (hypothesisId: string, message: string, data: Record<string, unknown> = {}, runId = 'run2') => {
+      fetch('http://127.0.0.1:7810/ingest/e1fb0ad9-95e8-422a-bd38-81f121a8c64c',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a5e906'},body:JSON.stringify({sessionId:'a5e906',runId,hypothesisId,location:'src/app/production/page.tsx',message,data,timestamp:Date.now()})}).catch(()=>{})
+    },
+    []
+  )
+  // #endregion
+
   const fetchInitialData = useCallback(async () => {
     if (!currentWorkspace?.id) return
+
+    // #region agent log
+    debugLog('H2', 'fetchInitialData:start', { workspaceId: currentWorkspace.id })
+    // #endregion
 
     setInitialLoading(true)
     setError(null)
@@ -196,12 +211,23 @@ export default function ProductionPage() {
 
       setInfluencers(influencerPayload || [])
       setWorkflows(workflowItems)
+      // #region agent log
+      debugLog('H2', 'fetchInitialData:success', {
+        influencerCount: influencerPayload?.length ?? -1,
+        workflowCount: workflowItems?.length ?? -1,
+      })
+      // #endregion
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : 'Failed to load production tools')
+      // #region agent log
+      debugLog('H2', 'fetchInitialData:error', {
+        error: loadError instanceof Error ? loadError.message : 'unknown',
+      })
+      // #endregion
     } finally {
       setInitialLoading(false)
     }
-  }, [currentWorkspace?.id])
+  }, [currentWorkspace?.id, debugLog])
 
   useEffect(() => {
     if (!selectedInfluencer && influencers[0]) {
@@ -361,6 +387,15 @@ export default function ProductionPage() {
   const startGeneration = useCallback(async () => {
     if (!selectedInfluencer || !selectedWorkflowTemplate) return
 
+    // #region agent log
+    debugLog('H3', 'startGeneration:start', {
+      influencer: selectedInfluencer,
+      workflow: selectedWorkflowTemplate.id,
+      inputKeys: Object.keys(formValues).length,
+      expertMode,
+    })
+    // #endregion
+
     setSubmitLoading(true)
     setError(null)
     setAssets([])
@@ -393,10 +428,28 @@ export default function ProductionPage() {
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : 'Failed to start generation')
       setProgress(null)
+      // #region agent log
+      debugLog('H3', 'startGeneration:error', {
+        error: submitError instanceof Error ? submitError.message : 'unknown',
+      })
+      // #endregion
     } finally {
       setSubmitLoading(false)
     }
-  }, [formValues, selectedInfluencer, selectedWorkflowTemplate, subscribeToProgress])
+  }, [debugLog, expertMode, formValues, selectedInfluencer, selectedWorkflowTemplate, subscribeToProgress])
+
+  useEffect(() => {
+    // #region agent log
+    debugLog('H1', 'render:state', {
+      status,
+      workspaceLoading,
+      initialLoading,
+      hasWorkspace: Boolean(currentWorkspace?.id),
+      hasError: Boolean(error),
+      hasJobId: Boolean(jobId),
+    })
+    // #endregion
+  }, [currentWorkspace?.id, debugLog, error, initialLoading, jobId, status, workspaceLoading])
 
   if (status === 'loading' || workspaceLoading || initialLoading) {
     return (
@@ -423,7 +476,18 @@ export default function ProductionPage() {
   }
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] min-h-[640px]">
+    <div className="space-y-[var(--section-gap)]">
+      <AppHero
+        eyebrow="Creation"
+        title="Production"
+        description="Advanced generation workflow execution. Select a template, configure parameters, and run batch jobs on the GPU cluster."
+        metrics={[
+          { label: 'Influencers', value: influencers.length },
+          { label: 'Workflows', value: workflows.length },
+        ]}
+      />
+
+      <div className="flex h-[calc(100vh-14rem)] min-h-[640px] rounded-xl border border-border/80 shadow-sm overflow-hidden bg-background">
       <div className="w-72 border-r p-4 space-y-4 overflow-y-auto bg-background">
         <Card>
           <CardHeader>
@@ -615,8 +679,39 @@ export default function ProductionPage() {
             <CardHeader>
               <CardTitle>Progress</CardTitle>
             </CardHeader>
-            <CardContent>
-              <pre className="text-xs whitespace-pre-wrap">{JSON.stringify(progress, null, 2)}</pre>
+            <CardContent className="space-y-3">
+              {(() => {
+                const status = typeof progress.status === 'string' ? progress.status : 'UNKNOWN'
+                const percent = typeof progress.percent === 'number' ? progress.percent : null
+                const message = typeof progress.message === 'string' ? progress.message : null
+                const isRunning = status === 'RUNNING' || status === 'PROCESSING'
+                const isDone = status === 'READY' || status === 'COMPLETED'
+                const isFailed = status === 'FAILED' || status === 'ERROR'
+                return (
+                  <>
+                    <div className="flex items-center gap-3">
+                      <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${
+                        isDone ? 'bg-emerald-500/10 text-emerald-600' :
+                        isFailed ? 'bg-destructive/10 text-destructive' :
+                        isRunning ? 'bg-primary/10 text-primary' :
+                        'bg-muted text-muted-foreground'
+                      }`}>
+                        {isDone && '✓'} {isFailed && '✕'} {isRunning && '●'} {status}
+                      </span>
+                      {message && <span className="text-sm text-muted-foreground">{message}</span>}
+                    </div>
+                    {(percent !== null || isRunning) && (
+                      <div className="w-full h-2.5 rounded-full bg-muted overflow-hidden">
+                        <div
+                          className={`h-full transition-all duration-500 rounded-full ${isDone ? 'bg-emerald-500' : isFailed ? 'bg-destructive' : 'bg-primary'}`}
+                          style={{ width: `${isDone ? 100 : (percent ?? 0)}%` }}
+                        />
+                      </div>
+                    )}
+                    {percent !== null && <p className="text-xs text-muted-foreground">{percent}% complete</p>}
+                  </>
+                )
+              })()}
             </CardContent>
           </Card>
         ) : null}
@@ -635,9 +730,19 @@ export default function ProductionPage() {
                     ) : asset.kind === 'VIDEO' ? (
                       <video src={url} controls className="w-full rounded" />
                     ) : (
-                      // eslint-disable-next-line @next/next/no-img-element
                       <img src={url} alt="Generated asset" className="w-full rounded" />
                     )}
+                    <div className="flex gap-2 mt-2">
+                      <Button size="sm" variant="outline" className="flex-1 text-xs" asChild>
+                        <Link href={`/edit?assetId=${asset.id}`}>Edit</Link>
+                      </Button>
+                      <Button size="sm" variant="outline" className="flex-1 text-xs" asChild>
+                        <Link href="/automation/planner">Schedule</Link>
+                      </Button>
+                      <Button size="sm" variant="outline" className="flex-1 text-xs" asChild>
+                        <Link href="/gallery">Gallery</Link>
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
               )
@@ -658,6 +763,7 @@ export default function ProductionPage() {
           <div><span className="text-muted-foreground">Policy:</span> {selectedWorkflowTemplate?.content_policy || 'n/a'}</div>
           <div><span className="text-muted-foreground">Assets:</span> {assets.length}</div>
         </div>
+      </div>
       </div>
     </div>
   )

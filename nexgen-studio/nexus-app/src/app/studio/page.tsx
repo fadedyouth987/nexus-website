@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useRef, useCallback, useEffect } from 'react'
-import Image from 'next/image'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -9,13 +8,12 @@ import { Label } from '@/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ModelUploadPanel } from './ModelUploadPanel'
 import { StudioGenerationControls, type StudioGenerationControlsRef } from './StudioGenerationControls'
-import { LayoutGrid, ListTree, Search, Eye, Play, PanelBottomClose, PanelBottomOpen, Pencil, ImageIcon, Loader2 } from 'lucide-react'
+import { LayoutGrid, ListTree, Search, Eye, Play, PanelBottomClose, PanelBottomOpen, Pencil, ImageIcon, Loader2, Megaphone, Copy, Hash, Video } from 'lucide-react'
 import { Switch } from '@/components/ui/switch'
 import { cn } from '@/lib/core/utils'
 import apiFetch from '@/lib/core/api'
 import { useWorkspace } from '@/context/WorkspaceContext'
 import { generationOutputLimitByPlan, normalizePlan } from '@/lib/billing/planLimits'
-import { AppHero } from '@/components/layout/AppHero'
 
 type FlowStep = 'look' | 'personality' | 'scenes' | 'output' | 'generation'
 
@@ -95,6 +93,18 @@ export default function StudioPage() {
   const [batchLimit, setBatchLimit] = useState<number>(generationOutputLimitByPlan('STARTER'))
   const [promptPresets, setPromptPresets] = useState<PromptPreset[]>([])
   const [presetNameInput, setPresetNameInput] = useState('')
+  const [outputFormat, setOutputFormat] = useState('reel')
+  const [nsfwEnabled, setNsfwEnabled] = useState(false)
+  const [generatedAssets, setGeneratedAssets] = useState<Array<{ id: string; kind: string; url?: string }>>([])
+  const [previewDataUrl, setPreviewDataUrl] = useState<string | null>(null)
+  const [campaignGenerating, setCampaignGenerating] = useState(false)
+  const [campaignResult, setCampaignResult] = useState<{
+    caption: string
+    hashtags: string[]
+    platform: string
+    outputs: Array<{ signedUrl?: string; kind: string }>
+  } | null>(null)
+  const [campaignPlatform, setCampaignPlatform] = useState('instagram')
   useEffect(() => {
     setPromptPresets(loadPromptPresets())
   }, [])
@@ -174,6 +184,28 @@ export default function StudioPage() {
     }
   }, [])
 
+  const loadGeneratedAssets = useCallback(async (genJobId: string) => {
+    try {
+      const res = await apiFetch(`/generate/${genJobId}`)
+      if (!res.ok) return
+      const payload = (await res.json()) as { assets?: Array<{ id: string; kind: string }> }
+      const assets = payload.assets ?? []
+      const withUrls = await Promise.all(
+        assets.map(async (a) => {
+          try {
+            const signedRes = await apiFetch(`/assets/${a.id}/signed-url`)
+            if (!signedRes.ok) return { ...a, url: undefined }
+            const signed = (await signedRes.json()) as { signedUrl?: string }
+            return { ...a, url: signed.signedUrl }
+          } catch {
+            return { ...a, url: undefined }
+          }
+        })
+      )
+      setGeneratedAssets(withUrls)
+    } catch { /* ignore */ }
+  }, [])
+
   const handleGenerate = useCallback(async () => {
     const values = controlsRef.current?.getValues()
     const prompt = values?.prompt?.trim() ?? ''
@@ -206,6 +238,8 @@ export default function StudioPage() {
     }
     setGenerating(true)
     setGenError(null)
+    setPreviewDataUrl(null)
+    setGeneratedAssets([])
     setJobProgress({ status: 'queued', message: 'Queued…' })
     setLogLines((prev) => [
       ...prev,
@@ -225,7 +259,10 @@ export default function StudioPage() {
             prompt,
             negative_prompt: values?.negativePrompt?.trim() ?? '',
             batch_size: requestedOutputs,
+            format: outputFormat,
+            content_rating: nsfwEnabled ? 'nsfw' : 'sfw',
           },
+          ...(customWorkflowJson && selectedWorkflowId === 'custom' ? { customWorkflow: customWorkflowJson } : {}),
         }),
       })
       if (!res.ok) {
@@ -252,7 +289,13 @@ export default function StudioPage() {
               message: typeof progress.message === 'string' ? progress.message : undefined,
             })
           }
-          if (status === 'READY' || status === 'FAILED') {
+          if (status === 'READY') {
+            setJobProgress({ status: 'idle' })
+            closeProgressStream()
+            setGenerating(false)
+            void loadGeneratedAssets(id)
+          }
+          if (status === 'FAILED') {
             setJobProgress({ status: 'idle' })
             closeProgressStream()
             setGenerating(false)
@@ -271,6 +314,13 @@ export default function StudioPage() {
           }))
         } catch { /* ignore */ }
       })
+      eventSource.addEventListener('preview', (e: MessageEvent<string>) => {
+        try {
+          const data = JSON.parse(e.data) as { image?: string; data_url?: string }
+          const url = data.data_url || (data.image ? `data:image/png;base64,${data.image}` : null)
+          if (url) setPreviewDataUrl(url)
+        } catch { /* ignore */ }
+      })
       eventSource.addEventListener('status', (e: MessageEvent<string>) => {
         try {
           const data = JSON.parse(e.data) as { status?: string; message?: string }
@@ -278,7 +328,13 @@ export default function StudioPage() {
           if (data?.status === 'FAILED' && data?.message) {
             setGenError(data.message)
           }
-          if (data?.status === 'READY' || data?.status === 'FAILED') {
+          if (data?.status === 'READY') {
+            setJobProgress({ status: 'idle' })
+            closeProgressStream()
+            setGenerating(false)
+            void loadGeneratedAssets(id)
+          }
+          if (data?.status === 'FAILED') {
             setJobProgress({ status: 'idle' })
             closeProgressStream()
             setGenerating(false)
@@ -303,111 +359,145 @@ export default function StudioPage() {
     closeProgressStream,
     batchLimit,
     planTier,
+    outputFormat,
+    nsfwEnabled,
+    customWorkflowJson,
   ])
+
+  const handleCampaignGenerate = useCallback(async () => {
+    const values = controlsRef.current?.getValues()
+    const prompt = values?.prompt?.trim() ?? ''
+    if (!prompt) {
+      setGenError('Enter a positive prompt.')
+      return
+    }
+    const template = selectedWorkflowTemplateId
+      ? workflows.find((w) => w.id === selectedWorkflowTemplateId)
+      : workflows.find((w) => w.type === 'IMAGE')
+    if (!template) {
+      setGenError('No IMAGE workflow template available for campaign generation.')
+      return
+    }
+    if (!selectedInfluencerId) {
+      setGenError('Select an influencer first.')
+      return
+    }
+    setCampaignGenerating(true)
+    setCampaignResult(null)
+    setGenError(null)
+    try {
+      const res = await fetch('/api/generate/campaign', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          influencerId: selectedInfluencerId,
+          workflowTemplateId: template.id,
+          platform: campaignPlatform,
+          content_rating: nsfwEnabled ? 'nsfw' : 'sfw',
+          variables: {
+            prompt,
+            negative_prompt: values?.negativePrompt?.trim() ?? '',
+            batch_size: 1,
+          },
+        }),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error((err as { detail?: string }).detail || 'Campaign generation failed')
+      }
+      const data = await res.json()
+      setCampaignResult({
+        caption: data.caption ?? '',
+        hashtags: data.hashtags ?? [],
+        platform: data.platform ?? campaignPlatform,
+        outputs: data.outputs ?? [],
+      })
+    } catch (err) {
+      setGenError(err instanceof Error ? err.message : 'Campaign generation failed')
+    } finally {
+      setCampaignGenerating(false)
+    }
+  }, [selectedInfluencerId, selectedWorkflowTemplateId, workflows, campaignPlatform, nsfwEnabled])
 
   useEffect(() => () => closeProgressStream(), [closeProgressStream])
 
   return (
-    <div className="space-y-[var(--section-gap)]">
-      <AppHero
-        eyebrow="Studio"
-        title="Generate, direct, and refine in one surface"
-        description="The Studio now uses the same visual language as the rest of the product while keeping the high-density workflow intact. Move from prompts to previews to generated output without leaving the shell."
-        actions={
-          <>
-            <Button asChild size="lg">
-              <Link href="/creators/create">Create creator</Link>
-            </Button>
-            <Button asChild variant="outline" size="lg">
-              <Link href="/gallery">Open gallery</Link>
-            </Button>
-          </>
-        }
-        metrics={[
-          { label: 'Workspace', value: currentWorkspace?.name || 'Unselected' },
-          { label: 'Plan tier', value: planTier },
-          { label: 'Output limit', value: `${batchLimit} max` },
-        ]}
-        media={
-          <Image
-            src="/app/studio-motion.svg"
-            alt="Studio workflow artwork"
-            width={1400}
-            height={980}
-            unoptimized
-            className="h-auto w-full rounded-[24px]"
-          />
-        }
-      />
-
-      <div className="app-shell-panel flex min-h-[60vh] flex-col overflow-hidden">
-      {/* Top toolbar: format, view, NSFW toggle, primary action */}
-        <div className="flex shrink-0 items-center justify-between gap-4 border-b border-border/70 bg-muted/30 px-3 py-2">
-        <div className="flex items-center gap-3">
+    <div className="-mx-[var(--content-padding)] -mt-6 flex flex-col sm:-mt-8" style={{ height: 'calc(100vh - 80px)' }}>
+      {/* Compact studio header bar */}
+      <div className="flex shrink-0 items-center justify-between gap-4 border-b border-border/70 bg-background/80 px-4 py-2 backdrop-blur-sm">
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <Video className="h-4 w-4 text-primary" />
+            <span className="text-sm font-semibold tracking-tight text-foreground">Studio</span>
+          </div>
+          <div className="hidden h-5 w-px bg-border/70 sm:block" />
           <select
-            className="rounded-md border border-border bg-background px-2 py-1.5 text-xs font-medium text-foreground"
-            defaultValue="reel"
+            className="rounded-md border border-border/60 bg-muted/40 px-2 py-1 text-[11px] font-medium text-foreground"
+            value={outputFormat}
+            onChange={(e) => setOutputFormat(e.target.value)}
           >
             <option value="reel">TikTok Reel</option>
             <option value="story">Instagram Story</option>
             <option value="short">YouTube Short</option>
             <option value="custom">Custom</option>
           </select>
-          <span className="text-xs text-muted-foreground">100%</span>
-          <Button variant="secondary" size="sm">
-            Preview
-          </Button>
-          <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
-            <Switch defaultChecked={false} />
-            NSFW (gated)
+          <label className="hidden items-center gap-1.5 text-[11px] text-muted-foreground cursor-pointer sm:flex">
+            <Switch checked={nsfwEnabled} onCheckedChange={setNsfwEnabled} />
+            NSFW
           </label>
+          <div className="hidden h-5 w-px bg-border/70 sm:block" />
+          <span className="hidden rounded-full border border-border/60 bg-muted/40 px-2.5 py-0.5 text-[10px] font-medium text-muted-foreground sm:inline-flex">
+            {planTier} · {batchLimit} max
+          </span>
           {jobProgress.status !== 'idle' && (
-            <span className="text-xs text-muted-foreground">
-              {jobProgress.status === 'queued' && 'Queued'}
+            <span className="text-[11px] font-medium text-primary">
+              {jobProgress.status === 'queued' && 'Queued…'}
               {jobProgress.status === 'running' && (
-                jobProgress.percent != null ? `Rendering ${jobProgress.percent}%` : (jobProgress.message || 'Running…')
+                jobProgress.percent != null ? `${jobProgress.percent}%` : (jobProgress.message || 'Running…')
               )}
             </span>
           )}
-          <span className="text-xs text-muted-foreground">
-            Plan {planTier}: {batchLimit} output{batchLimit === 1 ? '' : 's'} max
-          </span>
         </div>
-        <Button size="sm" className="gap-2" onClick={handleGenerate} disabled={generating}>
-          {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}
-          Generate
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="ghost" className="hidden gap-1.5 text-xs sm:flex" asChild>
+            <Link href="/gallery">Gallery</Link>
+          </Button>
+          <Button size="sm" className="gap-2 px-4" onClick={handleGenerate} disabled={generating}>
+            {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}
+            Generate
+          </Button>
+        </div>
       </div>
 
-      {/* Main three-column area */}
+      {/* Main three-column area - fills remaining viewport */}
       <div className="flex min-h-0 flex-1">
         {/* Left panel: Library + Navigator */}
-        <aside className="flex w-[260px] shrink-0 flex-col border-r border-border/70 bg-muted/20">
+        <aside className="hidden w-[240px] shrink-0 flex-col border-r border-border/50 bg-muted/10 lg:flex">
           <Tabs value={leftTab} onValueChange={(v) => setLeftTab(v as 'library' | 'navigator')} className="flex flex-1 flex-col min-h-0">
-            <TabsList className="w-full justify-start rounded-none border-b border-border bg-transparent p-0 h-9">
-              <TabsTrigger value="library" className="gap-1.5 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent">
-                <LayoutGrid className="h-3.5 w-3.5" />
+            <TabsList className="w-full justify-start rounded-none border-b border-border/50 bg-transparent p-0 h-8">
+              <TabsTrigger value="library" className="gap-1.5 rounded-none border-b-2 border-transparent text-[11px] data-[state=active]:border-primary data-[state=active]:bg-transparent">
+                <LayoutGrid className="h-3 w-3" />
                 Library
               </TabsTrigger>
-              <TabsTrigger value="navigator" className="gap-1.5 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent">
-                <ListTree className="h-3.5 w-3.5" />
+              <TabsTrigger value="navigator" className="gap-1.5 rounded-none border-b-2 border-transparent text-[11px] data-[state=active]:border-primary data-[state=active]:bg-transparent">
+                <ListTree className="h-3 w-3" />
                 Navigator
               </TabsTrigger>
             </TabsList>
-            <TabsContent value="library" className="mt-0 flex min-h-0 flex-1 flex-col p-2">
+            <TabsContent value="library" className="mt-0 flex min-h-0 flex-1 flex-col overflow-y-auto p-2">
               <div className="relative mb-2">
-                <Search className="absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                <Search className="absolute left-2 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
                 <Input
-                  placeholder="Filter"
+                  placeholder="Filter workflows…"
                   value={libraryFilter}
                   onChange={(e) => setLibraryFilter(e.target.value)}
-                  className="h-8 pl-8 text-xs"
+                  className="h-7 pl-7 text-[11px]"
                 />
               </div>
-              <div className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground px-1 mb-1">
+              <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60 px-1 mb-1">
                 Workflows
               </div>
-              <ul className="space-y-0.5 overflow-y-auto max-h-40">
+              <ul className="space-y-0.5">
                 {WORKFLOW_PRESETS.filter((p) => !libraryFilter || p.name.toLowerCase().includes(libraryFilter.toLowerCase())).map((preset) => (
                   <li key={preset.id}>
                     <button
@@ -419,42 +509,41 @@ export default function StudioPage() {
                         setWorkflowUploadError(null)
                       }}
                       className={cn(
-                        'flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs',
-                        selectedWorkflowId === preset.id ? 'bg-primary/15 text-primary font-medium' : 'hover:bg-muted text-foreground'
+                        'flex w-full items-center gap-2 rounded-md px-2 py-1 text-left text-[11px]',
+                        selectedWorkflowId === preset.id ? 'bg-primary/15 text-primary font-medium' : 'hover:bg-muted/60 text-foreground'
                       )}
                     >
                       <span className="truncate">{preset.name}</span>
-                      <span className="text-[10px] text-muted-foreground">{preset.type}</span>
+                      <span className="text-[9px] text-muted-foreground">{preset.type}</span>
                     </button>
                   </li>
                 ))}
               </ul>
-              <div className="mt-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground px-1 mb-1">
-                Workflow templates (API)
+              <div className="mt-3 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60 px-1 mb-1">
+                Templates (API)
               </div>
-              <p className="px-1 text-[11px] text-muted-foreground mb-1">Select a template to use for generation.</p>
-              <ul className="space-y-0.5 overflow-y-auto max-h-32">
+              <ul className="space-y-0.5">
                 {workflows.map((wf) => (
                   <li key={wf.id}>
                     <button
                       type="button"
                       onClick={() => setSelectedWorkflowTemplateId((id) => (id === wf.id ? null : wf.id))}
                       className={cn(
-                        'flex w-full items-center justify-between gap-1 rounded-md px-2 py-1.5 text-left text-xs',
-                        selectedWorkflowTemplateId === wf.id ? 'bg-primary/15 text-primary font-medium' : 'hover:bg-muted text-foreground'
+                        'flex w-full items-center justify-between gap-1 rounded-md px-2 py-1 text-left text-[11px]',
+                        selectedWorkflowTemplateId === wf.id ? 'bg-primary/15 text-primary font-medium' : 'hover:bg-muted/60 text-foreground'
                       )}
                     >
                       <span className="truncate">{wf.name}</span>
-                      <span className="text-[10px] text-muted-foreground shrink-0">{wf.type}</span>
+                      <span className="text-[9px] text-muted-foreground shrink-0">{wf.type}</span>
                     </button>
                   </li>
                 ))}
                 {workflows.length === 0 && (
-                  <li className="px-2 py-1.5 text-[11px] text-muted-foreground">No templates loaded</li>
+                  <li className="px-2 py-1 text-[10px] text-muted-foreground">No templates loaded</li>
                 )}
               </ul>
-              <div className="mt-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground px-1 mb-1">
-                Upload your own
+              <div className="mt-3 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60 px-1 mb-1">
+                Custom
               </div>
               <input
                 ref={workflowFileInputRef}
@@ -467,13 +556,13 @@ export default function StudioPage() {
                 type="button"
                 variant="outline"
                 size="sm"
-                className="w-full justify-start text-xs"
+                className="w-full justify-start text-[11px] h-7"
                 onClick={() => workflowFileInputRef.current?.click()}
               >
                 Upload workflow (JSON)
               </Button>
               {customWorkflowName && (
-                <div className="mt-1 flex items-center gap-1.5 rounded-md bg-primary/10 px-2 py-1.5 text-[11px] text-primary">
+                <div className="mt-1 flex items-center gap-1.5 rounded-md bg-primary/10 px-2 py-1 text-[10px] text-primary">
                   <span className="truncate">{customWorkflowName}</span>
                   <button
                     type="button"
@@ -490,33 +579,32 @@ export default function StudioPage() {
                 </div>
               )}
               {workflowUploadError && (
-                <p className="mt-1 px-1 text-[11px] text-destructive">{workflowUploadError}</p>
+                <p className="mt-1 px-1 text-[10px] text-destructive">{workflowUploadError}</p>
               )}
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
-                className="mt-1 w-full justify-start text-xs text-muted-foreground hover:text-foreground"
+                className="mt-1 w-full justify-start text-[11px] h-7 text-muted-foreground hover:text-foreground"
                 onClick={() => document.getElementById('studio-models-upload')?.scrollIntoView({ behavior: 'smooth' })}
               >
-                Upload your own model
+                Upload model
               </Button>
-              <div className="mt-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground px-1 mb-1">
+              <div className="mt-3 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60 px-1 mb-1">
                 Presets
               </div>
-              <p className="px-1 text-[11px] text-muted-foreground mb-1">Save and load prompt presets.</p>
-              <div className="flex gap-1 mb-2">
+              <div className="flex gap-1 mb-1">
                 <Input
-                  placeholder="Preset name"
+                  placeholder="Name"
                   value={presetNameInput}
                   onChange={(e) => setPresetNameInput(e.target.value)}
-                  className="h-7 text-xs flex-1 min-w-0"
+                  className="h-6 text-[11px] flex-1 min-w-0"
                 />
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
-                  className="h-7 text-xs shrink-0"
+                  className="h-6 text-[10px] shrink-0 px-2"
                   onClick={() => {
                     const name = presetNameInput.trim() || 'Untitled'
                     const values = controlsRef.current?.getValues()
@@ -536,22 +624,22 @@ export default function StudioPage() {
                   Save
                 </Button>
               </div>
-              <ul className="space-y-1 overflow-y-auto max-h-32">
+              <ul className="space-y-0.5">
                 {promptPresets.map((preset) => (
-                  <li key={preset.id} className="flex items-center gap-1 rounded-md bg-muted/50 px-2 py-1">
-                    <span className="truncate text-[11px] flex-1 min-w-0" title={preset.name}>{preset.name}</span>
+                  <li key={preset.id} className="flex items-center gap-1 rounded-md bg-muted/40 px-2 py-0.5">
+                    <span className="truncate text-[10px] flex-1 min-w-0" title={preset.name}>{preset.name}</span>
                     <Button
                       type="button"
                       variant="ghost"
                       size="sm"
-                      className="h-6 px-1.5 text-[10px] shrink-0"
+                      className="h-5 px-1 text-[9px] shrink-0"
                       onClick={() => controlsRef.current?.setValues({ prompt: preset.prompt, negativePrompt: preset.negativePrompt })}
                     >
                       Load
                     </Button>
                     <button
                       type="button"
-                      className="text-muted-foreground hover:text-destructive shrink-0 text-[10px]"
+                      className="text-muted-foreground hover:text-destructive shrink-0 text-[9px]"
                       onClick={() => {
                         const list = promptPresets.filter((p) => p.id !== preset.id)
                         setPromptPresets(list)
@@ -566,71 +654,113 @@ export default function StudioPage() {
               </ul>
             </TabsContent>
             <TabsContent value="navigator" className="mt-0 flex min-h-0 flex-1 flex-col p-2">
-              <div className="flex-1 overflow-y-auto">
+              <div className="flex-1 overflow-y-auto space-y-0.5">
                 {FLOW_STEPS.map((step) => (
                   <button
                     key={step.id}
                     type="button"
                     onClick={() => setActiveStep(step.id)}
                     className={cn(
-                      'flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs',
-                      activeStep === step.id ? 'bg-primary/15 text-primary font-medium' : 'hover:bg-muted text-foreground'
+                      'flex w-full items-center gap-2 rounded-md px-2 py-1 text-left text-[11px]',
+                      activeStep === step.id ? 'bg-primary/15 text-primary font-medium' : 'hover:bg-muted/60 text-foreground'
                     )}
                   >
-                    <Eye className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                    <Eye className="h-3 w-3 shrink-0 text-muted-foreground" />
                     <span className="truncate">{step.title}</span>
                   </button>
                 ))}
-                <div className="mt-2 border-t border-border pt-2">
-                  <Link
-                    href="/edit"
-                    className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs text-foreground hover:bg-muted"
-                  >
-                    <Pencil className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                <div className="mt-2 border-t border-border/50 pt-2 space-y-0.5">
+                  <Link href="/edit" className="flex w-full items-center gap-2 rounded-md px-2 py-1 text-left text-[11px] text-foreground hover:bg-muted/60">
+                    <Pencil className="h-3 w-3 shrink-0 text-muted-foreground" />
                     <span className="truncate">Edit</span>
-                    <span className="ml-1 rounded bg-primary/20 px-1 text-[10px] text-primary">New</span>
                   </Link>
-                  <Link
-                    href="/design"
-                    className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs text-foreground hover:bg-muted"
-                  >
-                    <LayoutGrid className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                  <Link href="/design" className="flex w-full items-center gap-2 rounded-md px-2 py-1 text-left text-[11px] text-foreground hover:bg-muted/60">
+                    <LayoutGrid className="h-3 w-3 shrink-0 text-muted-foreground" />
                     <span className="truncate">Design</span>
                   </Link>
-                  <Link
-                    href="/gallery"
-                    className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs text-foreground hover:bg-muted"
-                  >
-                    <ImageIcon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                    <span className="truncate">Show Output</span>
+                  <Link href="/gallery" className="flex w-full items-center gap-2 rounded-md px-2 py-1 text-left text-[11px] text-foreground hover:bg-muted/60">
+                    <ImageIcon className="h-3 w-3 shrink-0 text-muted-foreground" />
+                    <span className="truncate">Gallery</span>
                   </Link>
                 </div>
               </div>
-              <div className="mt-2 border-t border-border pt-2">
-                <p className="px-1 text-[10px] text-muted-foreground">Type to locate (⌘K)</p>
+              <div className="mt-1 border-t border-border/50 pt-1">
+                <p className="px-1 text-[9px] text-muted-foreground/60">⌘K to search</p>
               </div>
             </TabsContent>
           </Tabs>
         </aside>
 
         {/* Center: Canvas */}
-        <section className="flex min-w-0 flex-1 flex-col bg-muted/40">
-          <div className="flex flex-1 items-center justify-center p-6">
-            <div className="flex h-full w-full max-w-4xl flex-col items-center justify-center rounded-lg border-2 border-dashed border-border bg-muted/60">
-              <p className="text-sm text-muted-foreground">Preview</p>
-              <p className="mt-1 text-xs text-muted-foreground">How the current scene will look in your reel or clip.</p>
-              <div className="mt-4 h-48 w-64 rounded-md border border-border bg-muted/80 flex items-center justify-center text-xs text-muted-foreground">
-                Preview frame
+        <section className="flex min-w-0 flex-1 flex-col bg-black/[0.03] dark:bg-black/20">
+          <div className="flex flex-1 items-center justify-center overflow-y-auto p-4">
+            {generatedAssets.length > 0 ? (
+              <div className="w-full max-w-5xl space-y-4">
+                <div className={cn('grid gap-3', generatedAssets.length === 1 ? 'grid-cols-1 max-w-2xl mx-auto' : 'grid-cols-1 sm:grid-cols-2')}>
+                  {generatedAssets.map((asset) => (
+                    <div key={asset.id} className="group rounded-lg border border-border/50 bg-card/80 overflow-hidden shadow-sm backdrop-blur-sm">
+                      {asset.url ? (
+                        asset.kind === 'VIDEO' ? (
+                          <video src={asset.url} controls className="w-full" />
+                        ) : (
+                          <img src={asset.url} alt="Generated" className="w-full" />
+                        )
+                      ) : (
+                        <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">Loading...</div>
+                      )}
+                      <div className="flex gap-1.5 p-2 border-t border-border/50 opacity-0 transition-opacity group-hover:opacity-100">
+                        <Button size="sm" variant="ghost" className="text-[11px] flex-1 h-7" asChild>
+                          <Link href={`/edit?assetId=${asset.id}`}>Edit</Link>
+                        </Button>
+                        <Button size="sm" variant="ghost" className="text-[11px] flex-1 h-7" asChild>
+                          <Link href="/gallery">Gallery</Link>
+                        </Button>
+                        <Button size="sm" variant="ghost" className="text-[11px] flex-1 h-7" asChild>
+                          <Link href="/planner">Schedule</Link>
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
+            ) : generating ? (
+              <div className="flex flex-col items-center gap-4 w-full max-w-lg">
+                {previewDataUrl ? (
+                  <>
+                    <img src={previewDataUrl} alt="Generation preview" className="w-full rounded-lg border border-white/10 shadow-2xl" />
+                    <p className="text-[11px] text-muted-foreground">Live preview</p>
+                  </>
+                ) : (
+                  <Loader2 className="h-10 w-10 animate-spin text-primary/70" />
+                )}
+                <p className="text-xs text-muted-foreground">
+                  {jobProgress.message || (jobProgress.percent != null ? `Generating ${jobProgress.percent}%…` : 'Generating…')}
+                </p>
+                {jobProgress.percent != null && (
+                  <div className="w-48 h-1.5 rounded-full bg-muted/60 overflow-hidden">
+                    <div className="h-full bg-primary transition-all duration-300 ease-out" style={{ width: `${jobProgress.percent}%` }} />
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center gap-3 text-center">
+                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-muted/40">
+                  <ImageIcon className="h-7 w-7 text-muted-foreground/50" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground/70">No output yet</p>
+                  <p className="mt-1 max-w-xs text-[11px] text-muted-foreground/50">Configure a prompt in the Properties panel and click Generate.</p>
+                </div>
+              </div>
+            )}
           </div>
         </section>
 
         {/* Right panel: Properties */}
-        <aside className="flex w-[320px] shrink-0 flex-col border-l border-border/70 bg-muted/20">
-          <div className="border-b border-border px-3 py-2">
-            <h2 className="text-sm font-semibold text-foreground">Properties</h2>
-            <p className="text-[11px] text-muted-foreground mt-0.5">
+        <aside className="flex w-[300px] shrink-0 flex-col border-l border-border/50 bg-muted/10">
+          <div className="border-b border-border/50 px-3 py-2">
+            <h2 className="text-[11px] font-semibold uppercase tracking-wider text-foreground">Properties</h2>
+            <p className="text-[10px] text-muted-foreground">
               {FLOW_STEPS.find((s) => s.id === activeStep)?.title ?? 'Select a step'}
             </p>
           </div>
@@ -638,9 +768,9 @@ export default function StudioPage() {
             {activeStep === 'generation' ? (
               <>
                 <div className="mb-3">
-                  <Label className="text-[11px] text-muted-foreground">Creator</Label>
+                  <Label className="text-[10px] text-muted-foreground">Creator</Label>
                   <select
-                    className="mt-1 w-full rounded-md border border-input bg-background px-2 py-1.5 text-xs text-foreground"
+                    className="mt-1 w-full rounded-md border border-input bg-background px-2 py-1 text-[11px] text-foreground"
                     value={selectedInfluencerId}
                     onChange={(e) => setSelectedInfluencerId(e.target.value)}
                   >
@@ -652,18 +782,14 @@ export default function StudioPage() {
                     ))}
                   </select>
                 </div>
-                <div className="mb-3">
-                  <Label className="text-[11px] text-muted-foreground">Type</Label>
-                  <p className="text-xs font-medium">Generation (Comfy)</p>
-                </div>
                 {(() => {
                   const mode = IMAGE_WORKFLOW_IDS.includes(selectedWorkflowId) ? 'IMAGE' : 'VIDEO'
                   const templateForCost = workflows.find((w) => w.type === mode)
                   const credits = templateForCost?.base_cost_credits
                   return (
                     credits != null && Number.isFinite(credits) && (
-                      <p className="mb-3 text-[11px] text-muted-foreground">
-                        Cost: ~{Number(credits)} credits per run
+                      <p className="mb-3 text-[10px] text-muted-foreground">
+                        ~{Number(credits)} credits per run
                       </p>
                     )
                   )
@@ -678,6 +804,86 @@ export default function StudioPage() {
                 <div id="studio-models-upload" className="mt-4 scroll-mt-4">
                   <ModelUploadPanel />
                 </div>
+
+                <div className="mt-4 border-t border-border/50 pt-4">
+                  <h3 className="text-[11px] font-semibold text-foreground flex items-center gap-1.5 mb-2">
+                    <Megaphone className="h-3 w-3" /> Campaign Post
+                  </h3>
+                  <div className="mb-2">
+                    <Label className="text-[10px] text-muted-foreground">Platform</Label>
+                    <select
+                      className="mt-1 w-full rounded-md border border-input bg-background px-2 py-1 text-[11px] text-foreground"
+                      value={campaignPlatform}
+                      onChange={(e) => setCampaignPlatform(e.target.value)}
+                    >
+                      <option value="instagram">Instagram</option>
+                      <option value="tiktok">TikTok</option>
+                      <option value="twitter">X (Twitter)</option>
+                      <option value="facebook">Facebook</option>
+                      <option value="youtube">YouTube</option>
+                      <option value="linkedin">LinkedIn</option>
+                      <option value="reddit">Reddit</option>
+                      <option value="onlyfans">OnlyFans</option>
+                      <option value="fansly">Fansly</option>
+                    </select>
+                  </div>
+                  <Button
+                    size="sm"
+                    className="w-full gap-2 h-7 text-[11px]"
+                    variant="secondary"
+                    onClick={handleCampaignGenerate}
+                    disabled={campaignGenerating || generating}
+                  >
+                    {campaignGenerating ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <Megaphone className="h-3 w-3" />
+                    )}
+                    {campaignGenerating ? 'Generating…' : 'Campaign Post'}
+                  </Button>
+
+                  {campaignResult && (
+                    <div className="mt-3 space-y-2 rounded-md border border-border/50 bg-card p-2">
+                      {campaignResult.outputs.map((o, i) =>
+                        o.signedUrl ? (
+                          <img key={i} src={o.signedUrl} alt="Campaign output" className="w-full rounded" />
+                        ) : null
+                      )}
+                      <div className="space-y-1">
+                        <div className="flex items-start justify-between gap-1">
+                          <p className="text-[11px] text-foreground whitespace-pre-wrap flex-1">{campaignResult.caption}</p>
+                          <button
+                            type="button"
+                            className="shrink-0 p-0.5 hover:bg-muted rounded"
+                            onClick={() => navigator.clipboard.writeText(campaignResult.caption)}
+                            title="Copy caption"
+                          >
+                            <Copy className="h-2.5 w-2.5 text-muted-foreground" />
+                          </button>
+                        </div>
+                        {campaignResult.hashtags.length > 0 && (
+                          <div className="flex flex-wrap gap-1">
+                            {campaignResult.hashtags.map((tag, i) => (
+                              <span key={i} className="inline-flex items-center gap-0.5 rounded bg-primary/10 px-1.5 py-0.5 text-[9px] text-primary">
+                                <Hash className="h-2 w-2" />{tag.replace(/^#/, '')}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                        <button
+                          type="button"
+                          className="text-[9px] text-muted-foreground hover:text-foreground underline"
+                          onClick={() => {
+                            const text = `${campaignResult.caption}\n\n${campaignResult.hashtags.join(' ')}`
+                            navigator.clipboard.writeText(text)
+                          }}
+                        >
+                          Copy all
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </>
             ) : (
               <PropertiesStepContent step={activeStep} />
@@ -687,39 +893,39 @@ export default function StudioPage() {
       </div>
 
       {/* Bottom panel: Log / Queue */}
-      <div className="shrink-0 border-t border-border bg-muted/20">
+      <div className="shrink-0 border-t border-border/50 bg-muted/10">
         <button
           type="button"
           onClick={() => setBottomOpen(!bottomOpen)}
-          className="flex w-full items-center justify-between px-3 py-1.5 text-left text-xs text-muted-foreground hover:bg-muted/50"
+          className="flex w-full items-center justify-between px-4 py-1 text-left text-[10px] text-muted-foreground hover:bg-muted/30"
         >
-          <span className="flex items-center gap-2">
-            {bottomOpen ? <PanelBottomOpen className="h-3.5 w-3.5" /> : <PanelBottomClose className="h-3.5 w-3.5" />}
-            {bottomOpen ? 'Generation log' : 'Show output'}
+          <span className="flex items-center gap-1.5">
+            {bottomOpen ? <PanelBottomOpen className="h-3 w-3" /> : <PanelBottomClose className="h-3 w-3" />}
+            {bottomOpen ? 'Log' : 'Show log'}
           </span>
+          {genError && !bottomOpen && <span className="text-[9px] text-destructive">Error</span>}
         </button>
         {bottomOpen && (
-          <Tabs value={bottomTab} onValueChange={(v) => setBottomTab(v as 'log' | 'queue')} className="border-t border-border">
-            <TabsList className="w-full justify-start rounded-none border-b border-border bg-transparent p-0 h-8">
-              <TabsTrigger value="log" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary text-xs">
-                1 Generation log
+          <Tabs value={bottomTab} onValueChange={(v) => setBottomTab(v as 'log' | 'queue')} className="border-t border-border/50">
+            <TabsList className="w-full justify-start rounded-none border-b border-border/50 bg-transparent p-0 h-7">
+              <TabsTrigger value="log" className="rounded-none border-b-2 border-transparent text-[10px] data-[state=active]:border-primary">
+                Log
               </TabsTrigger>
-              <TabsTrigger value="queue" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary text-xs">
-                2 Queue
+              <TabsTrigger value="queue" className="rounded-none border-b-2 border-transparent text-[10px] data-[state=active]:border-primary">
+                Queue
               </TabsTrigger>
             </TabsList>
-            <TabsContent value="log" className="m-0 p-3 h-24 overflow-y-auto text-[11px] text-muted-foreground">
+            <TabsContent value="log" className="m-0 px-4 py-2 h-28 overflow-y-auto font-mono text-[10px] text-muted-foreground">
               {genError && <p className="text-destructive mb-1">{genError}</p>}
               {logLines.map((line, i) => (
                 <p key={i}>{line}</p>
               ))}
             </TabsContent>
-            <TabsContent value="queue" className="m-0 p-3 h-24 overflow-y-auto text-[11px] text-muted-foreground">
+            <TabsContent value="queue" className="m-0 px-4 py-2 h-28 overflow-y-auto font-mono text-[10px] text-muted-foreground">
               <p>No jobs in queue.</p>
             </TabsContent>
           </Tabs>
         )}
-      </div>
       </div>
     </div>
   )

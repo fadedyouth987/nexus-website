@@ -45,6 +45,7 @@ const heightOptions = [256, 512, 768, 1024, 1280, 1536]
 
 type BillingPayload = {
   plan?: string | null
+  tokenBalance?: number | null
 }
 
 export function GenerationPanel() {
@@ -53,6 +54,7 @@ export function GenerationPanel() {
   const [status, setStatus] = useState('')
   const [lastJobId, setLastJobId] = useState<string | null>(null)
   const [planTier, setPlanTier] = useState('STARTER')
+  const [tokenBalance, setTokenBalance] = useState<number | null>(null)
   const [batchLimit, setBatchLimit] = useState(generationOutputLimitByPlan('STARTER'))
 
   useEffect(() => {
@@ -64,6 +66,9 @@ export function GenerationPanel() {
         if (cancelled) return
         const normalized = normalizePlan(payload?.plan)
         setPlanTier(normalized)
+        if (typeof payload?.tokenBalance === 'number') {
+          setTokenBalance(payload.tokenBalance)
+        }
         setBatchLimit(generationOutputLimitByPlan(normalized))
       })
       .catch(() => {})
@@ -108,6 +113,9 @@ export function GenerationPanel() {
         body: JSON.stringify(payload),
       })
       if (!response.ok) {
+        if (response.status === 402) {
+          throw new Error('Insufficient tokens. Please upgrade your plan or top up your balance.')
+        }
         const data = await response.json().catch(() => ({}))
         throw new Error(typeof data.detail === 'string' ? data.detail : 'Generation failed')
       }
@@ -136,7 +144,14 @@ export function GenerationPanel() {
             </Button>
           </div>
         </div>
-        <p className="text-xs text-muted-foreground">Plan {planTier}: up to {batchLimit} outputs per request.</p>
+        <div className="flex justify-between items-center mt-2">
+          <p className="text-xs text-muted-foreground">Plan {planTier}: up to {batchLimit} outputs per request.</p>
+          {tokenBalance !== null && (
+            <p className="text-xs font-semibold text-primary">
+              Tokens available: {tokenBalance.toLocaleString()}
+            </p>
+          )}
+        </div>
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="model" className="w-full">
@@ -175,9 +190,9 @@ export function GenerationPanel() {
             className="w-full" 
             size="lg"
             onClick={handleGenerate}
-            disabled={isGenerating}
+            disabled={isGenerating || (tokenBalance !== null && tokenBalance <= 0)}
           >
-            {isGenerating ? status || 'Generating...' : 'Generate Image'}
+            {isGenerating ? status || 'Generating...' : (tokenBalance !== null && tokenBalance <= 0) ? 'Insufficient Tokens' : 'Generate Image'}
           </Button>
           {lastJobId && !isGenerating && (
             <p className="text-center text-sm text-muted-foreground">

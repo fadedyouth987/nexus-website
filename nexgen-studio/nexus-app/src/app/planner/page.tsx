@@ -4,13 +4,14 @@ import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
-import { PageHeader } from '@/components/layout/PageHeader'
+import { ArrowLeft, Calendar, Loader2 } from 'lucide-react'
+import { AppHero } from '@/components/layout/AppHero'
+import { NextStepBanner } from '@/components/layout/NextStepBanner'
 import { Button } from '@/components/ui/button'
 import { ChatPanel, type ChatMessage } from '@/components/planner/ChatPanel'
 import { PlanBuilderPanel, type PlanSummary } from '@/components/planner/PlanBuilderPanel'
 import type { ContentItem } from '@/components/planner/CalendarGrid'
 import apiFetch from '@/lib/core/api'
-import { ArrowLeft, Loader2 } from 'lucide-react'
 
 type PlannerPageProps = {
   embedded?: boolean
@@ -159,12 +160,12 @@ export default function PlannerPage({ embedded = false }: PlannerPageProps) {
   return (
     <div className="flex h-full flex-col gap-6">
       {!embedded && (
-        <PageHeader
-          title="Content planner"
+        <AppHero
+          eyebrow="Automation"
+          title="Content Planner"
           description="Start with SFW vs NSFW (NSFW is 18+ gated), then describe your niche. The AI builds a content calendar you can refine by conversation."
-          breadcrumb={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Planner' }]}
           actions={
-            <Button variant="outline" size="sm" asChild>
+            <Button variant="outline" size="lg" asChild>
               <Link href="/dashboard" className="flex items-center gap-2">
                 <ArrowLeft className="h-4 w-4" />
                 Back to dashboard
@@ -201,6 +202,8 @@ export default function PlannerPage({ embedded = false }: PlannerPageProps) {
           />
         </div>
       </div>
+
+      <NextStepBanner currentPhase={4} nextLabel="View Calendar" nextHref="/calendar" nextIcon={Calendar} />
     </div>
   )
 }

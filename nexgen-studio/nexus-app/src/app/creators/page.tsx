@@ -5,7 +5,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
-import { Edit, Loader2, Plus, Trash2, Users } from 'lucide-react'
+import { Edit, Loader2, Plus, Trash2, Users, Video } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -14,6 +14,7 @@ import apiFetch from '@/lib/core/api'
 import { isPortfolioV2ClientEnabled } from '@/lib/core/featureFlags'
 import { useWorkspace } from '@/context/WorkspaceContext'
 import { AppHero } from '@/components/layout/AppHero'
+import { NextStepBanner } from '@/components/layout/NextStepBanner'
 
 interface Creator {
   id: string
@@ -285,9 +286,14 @@ function CreatorsV2Page() {
   return (
     <div className="space-y-[var(--section-gap)]">
       <AppHero
-        eyebrow="Creators v2"
-        title="Tenancy-aware creator workspace"
-        description="This list is powered by the v2 creator endpoint with org and workspace resolution handled in the API layer. The presentation now matches the rest of the app shell without changing the data contract."
+        eyebrow="Management"
+        title="Creators"
+        description="Manage your AI influencer personas. Create new creators, edit their profiles, and track their content output across workspaces."
+        actions={
+          <Button asChild size="lg">
+            <Link href="/creators/create">Create new creator</Link>
+          </Button>
+        }
         metrics={[
           { label: 'Workspace', value: data?.meta.workspace_name || currentWorkspace?.name || 'Unscoped' },
           { label: 'Role', value: data?.meta.role || 'Unknown' },
@@ -296,7 +302,7 @@ function CreatorsV2Page() {
         media={
           <Image
             src="/app/creators-grid.svg"
-            alt="Creators v2 artwork"
+            alt="Creators artwork"
             width={1400}
             height={980}
             className="h-auto w-full rounded-[24px]"
@@ -314,7 +320,12 @@ function CreatorsV2Page() {
         <EmptyState
           icon={<Users className="h-6 w-6" />}
           title="No creators in this workspace"
-          description="This view stays intentionally minimal while v2 tenancy, RLS, and backfill correctness are being validated."
+          description="Create your first AI influencer to start generating content."
+          action={
+            <Button asChild size="sm">
+              <Link href="/creators/create">Create creator</Link>
+            </Button>
+          }
         />
       ) : (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -332,11 +343,21 @@ function CreatorsV2Page() {
                 <div className="rounded-2xl border border-border/70 bg-background/70 px-4 py-3">
                   Created: {new Date(creator.created_at).toLocaleString()}
                 </div>
+                <div className="flex gap-2 pt-1">
+                  <Button size="sm" variant="outline" className="flex-1" asChild>
+                    <Link href={`/influencers/${creator.id}`}>View</Link>
+                  </Button>
+                  <Button size="sm" variant="outline" className="flex-1" asChild>
+                    <Link href="/studio">Generate</Link>
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           ))}
         </div>
       )}
+
+      <NextStepBanner currentPhase={1} nextLabel="Generate content in Studio" nextHref="/studio" nextIcon={Video} />
     </div>
   )
 }

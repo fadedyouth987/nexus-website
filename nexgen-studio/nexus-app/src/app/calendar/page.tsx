@@ -10,7 +10,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { PageHeader } from '@/components/layout/PageHeader'
-import { Loader2, ArrowLeft, Calendar, ListTodo } from 'lucide-react'
+import { Loader2, ArrowLeft, Calendar, ListTodo, Share2 } from 'lucide-react'
+import { NextStepBanner } from '@/components/layout/NextStepBanner'
 import { useWorkspace } from '@/context/WorkspaceContext'
 import { cn } from '@/lib/core/utils'
 
@@ -363,6 +364,62 @@ function CalendarV2Page({ embedded = false }: CalendarPageProps) {
         </Card>
       ) : null}
 
+      {schedules.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Week View</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-7 gap-1">
+              {(() => {
+                const today = new Date()
+                const startOfWeek = new Date(today)
+                startOfWeek.setDate(today.getDate() - today.getDay())
+                const days: Date[] = []
+                for (let i = 0; i < 7; i++) {
+                  const d = new Date(startOfWeek)
+                  d.setDate(startOfWeek.getDate() + i)
+                  days.push(d)
+                }
+                return days.map((day) => {
+                  const dayStr = day.toISOString().slice(0, 10)
+                  const isToday = dayStr === today.toISOString().slice(0, 10)
+                  const daySchedules = schedules.filter((s) =>
+                    s.scheduled_for && s.scheduled_for.startsWith(dayStr)
+                  )
+                  return (
+                    <div key={dayStr} className={cn(
+                      'min-h-[100px] rounded-lg border p-2',
+                      isToday ? 'border-primary/40 bg-primary/5' : 'border-border'
+                    )}>
+                      <div className={cn('text-xs font-medium mb-1', isToday ? 'text-primary' : 'text-muted-foreground')}>
+                        {day.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric' })}
+                      </div>
+                      <div className="space-y-1">
+                        {daySchedules.map((s) => {
+                          const mc = content.find((c) => c.id === s.content_id)
+                          const title = (mc && typeof mc.data?.title === 'string' && mc.data.title) || mc?.type || 'Content'
+                          return (
+                            <div key={s.id} className={cn(
+                              'rounded px-1.5 py-0.5 text-[10px] truncate',
+                              s.status === 'published' ? 'bg-emerald-500/10 text-emerald-700' :
+                              s.status === 'canceled' ? 'bg-muted text-muted-foreground line-through' :
+                              'bg-primary/10 text-primary'
+                            )}>
+                              {title}
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )
+                })
+              })()}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <div className={cn('grid gap-6 lg:grid-cols-[1fr_1.35fr]', !embedded && 'mt-8')}>
         <Card className="border-border">
           <CardHeader>
@@ -526,6 +583,10 @@ function CalendarV2Page({ embedded = false }: CalendarPageProps) {
           </CardContent>
         </Card>
       </div>
+
+      {!embedded && (
+        <NextStepBanner currentPhase={5} nextLabel="Connect socials" nextHref="/socials" nextIcon={Share2} />
+      )}
     </div>
   )
 }

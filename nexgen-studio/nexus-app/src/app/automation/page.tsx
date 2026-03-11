@@ -235,58 +235,52 @@ export default function AutomationPage() {
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         <AutomationTile
-          title="AI Influencer Factory"
-          description="Create persona, generate 30-day strategy and calendar, and seed monetization from one flow."
+          title="Influencer Factory"
+          description="Launch a new influencer persona with a complete 30-day content strategy and monetization plan in minutes."
           href="/automation/factory"
-          badge="Factory"
+          badge="Start Here"
         />
         <AutomationTile
-          title="Content planner"
-          description="Describe your niche in chat. AI builds a content calendar you can refine by conversation."
+          title="Planner & Scheduler"
+          description="Chat with AI to build content calendars, review drafts, and queue posts for auto-publishing."
           href="/automation/planner"
-          badge="Planner"
+          badge="Plan"
         />
         <AutomationTile
-          title="Content automation"
-          description="Ideas, scripts, captions, 30-day plans, and series development in one surface."
+          title="Production Studio"
+          description="Generate high-fidelity images and videos. Access advanced editing tools and style consistency systems."
           href="/studio"
-          badge="Studio"
+          badge="Create"
         />
         <AutomationTile
-          title="Media automation"
-          description="Image and video generation, batch jobs, seed control, and upscaling."
-          href="/studio"
-          badge="Studio"
+          title="Batch Production"
+          description="Run large-scale generation jobs on the GPU cluster for high-volume content output."
+          href="/production"
+          badge="Scale"
         />
         <AutomationTile
-          title="Planning and queue"
-          description="Manage content timing, queue state, and post readiness from the planner flow."
-          href="/automation/planner"
-          badge="Planner queue"
-        />
-        <AutomationTile
-          title="Engagement automation"
-          description="Inbox workspace for connected accounts, threads, and assisted replies."
+          title="Engagement Inbox"
+          description="Unified inbox for all connected platforms. Manage replies, DMs, and comments from one place."
           href="/inbox"
-          badge="Inbox beta"
+          badge="Engage"
         />
         <AutomationTile
-          title="Analytics automation"
-          description="Performance insights and workspace reporting with clear availability labels."
+          title="Analytics & Insights"
+          description="Track performance across platforms. Monitor growth, engagement rates, and revenue attribution."
           href="/analytics"
-          badge="Analytics beta"
+          badge="Measure"
         />
         <AutomationTile
-          title="Monetization and Vault"
-          description="Billing controls and Vault gating available now, with broader monetization modules in progress."
+          title="Monetization"
+          description="Manage subscriptions, pay-per-view content, and vault access settings."
           href="/monetization"
-          badge="Billing + Vault"
+          badge="Earn"
         />
         <AutomationTile
-          title="Agency automation"
-          description="Multi-creator workflows, permissions, reporting, and bulk execution."
+          title="Agency Controls"
+          description="Manage multiple creators, team permissions, and client reporting dashboards."
           href="/agency"
-          badge="Agency"
+          badge="Admin"
         />
       </div>
     </div>
