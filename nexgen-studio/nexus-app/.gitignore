@@ -1,0 +1,7 @@
+.env.local
+.env
+.next
+.next.stale
+node_modules
+tsconfig.tsbuildinfo
+tools/baseline/

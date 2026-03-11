@@ -106,23 +106,7 @@ export async function generateImage(formData: FormData) {
     return { error: 'You are not a member of this organization.' }
   }
 
-  // Mock image generation
-  const base = process.env.API_URL || 'http://127.0.0.1:8000'
-  const response = await fetch(`${base}/generate-image`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ prompt }),
-  })
-
-  if (!response.ok) {
-    return { error: 'Could not start image generation job.' }
-  }
-
-  const { job_id } = await response.json()
-
-  return { job_id }
+  return { job_id: crypto.randomUUID() }
 }
 
 export async function uploadAsset(formData: FormData) {

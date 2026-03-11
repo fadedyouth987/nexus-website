@@ -1,0 +1,77 @@
+{
+  "1": {
+    "class_type": "CheckpointLoaderSimple",
+    "inputs": {
+      "ckpt_name": "sd_xl_base_1.0.safetensors"
+    }
+  },
+  "2": {
+    "class_type": "ADE_LoadAnimateDiffModel",
+    "inputs": {
+      "model_name": "mm_sdxl_v10_beta.pt"
+    }
+  },
+  "3": {
+    "class_type": "ADE_ApplyAnimateDiffModelSimple",
+    "inputs": {
+      "motion_model": ["2", 0],
+      "model": ["1", 0]
+    }
+  },
+  "4": {
+    "class_type": "EmptyLatentImage",
+    "inputs": {
+      "batch_size": "{{batch_size}}",
+      "height": "{{height}}",
+      "width": "{{width}}"
+    }
+  },
+  "5": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "clip": ["1", 1],
+      "text": "{{prompt}}"
+    }
+  },
+  "6": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "clip": ["1", 1],
+      "text": "{{negative_prompt}}"
+    }
+  },
+  "7": {
+    "class_type": "KSampler",
+    "inputs": {
+      "cfg": "{{cfg}}",
+      "denoise": "{{denoise}}",
+      "latent_image": ["4", 0],
+      "model": ["3", 0],
+      "negative": ["6", 0],
+      "positive": ["5", 0],
+      "sampler_name": "{{sampler_name}}",
+      "scheduler": "{{scheduler}}",
+      "seed": "{{seed}}",
+      "steps": "{{steps}}"
+    }
+  },
+  "8": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": ["7", 0],
+      "vae": ["1", 2]
+    }
+  },
+  "9": {
+    "class_type": "VHS_VideoCombine",
+    "inputs": {
+      "frame_rate": "{{frame_rate}}",
+      "images": ["8", 0],
+      "loop_count": 0,
+      "filename_prefix": "sdxl_anim",
+      "format": "video/h264-mp4",
+      "pingpong": false,
+      "save_output": true
+    }
+  }
+}

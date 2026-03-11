@@ -37,8 +37,15 @@ const schedulers = [
   { value: 'ddim_uniform', label: 'DDIM Uniform' },
 ]
 
-export function SamplerTab() {
+type SamplerTabProps = {
+  maxBatchSize?: number
+  planLabel?: string
+}
+
+export function SamplerTab({ maxBatchSize = 4, planLabel = '' }: SamplerTabProps) {
   const { settings, updateSetting } = useGenerationSettings()
+  const batchMax = Math.max(1, Math.floor(maxBatchSize))
+  const effectiveBatchSize = Math.max(1, Math.min(batchMax, settings.batchSize))
 
   const randomizeSeed = () => {
     updateSetting('seed', Math.floor(Math.random() * 4294967296))
@@ -150,15 +157,20 @@ export function SamplerTab() {
       {/* Batch Size */}
       <div className="space-y-2">
         <div className="flex justify-between">
-          <Label>Batch Size: {settings.batchSize}</Label>
+          <Label>Batch Size: {effectiveBatchSize}</Label>
         </div>
         <Slider
-          value={[settings.batchSize]}
-          onValueChange={([value]) => updateSetting('batchSize', value)}
+          value={[effectiveBatchSize]}
+          onValueChange={([value]) =>
+            updateSetting('batchSize', Math.max(1, Math.min(batchMax, value)))
+          }
           min={1}
-          max={4}
+          max={batchMax}
           step={1}
         />
+        <p className="text-xs text-muted-foreground">
+          Plan cap: {batchMax} outputs per request{planLabel ? ` (${planLabel})` : ''}.
+        </p>
       </div>
     </div>
   )

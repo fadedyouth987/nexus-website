@@ -38,7 +38,7 @@ export async function createOrganization(_prevState: OrganizationActionState | u
 
   const { error: memberError } = await supabase.from('organization_members').insert([
     {
-      org_id: organization.id,
+      organization_id: organization.id,
       user_id: user.id,
       role: 'owner',
     },

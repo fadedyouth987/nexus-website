@@ -1,0 +1,53 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "incremental": false
+  },
+  "include": [
+    "next-env.d.ts",
+    "src/types/**/*.d.ts",
+    "server/worker/**/*.ts",
+    "src/app/api/org/route.ts",
+    "src/app/api/workspaces/route.ts",
+    "src/app/api/creators/route.ts",
+    "src/app/api/content/route.ts",
+    "src/app/api/schedules/route.ts",
+    "src/app/api/analytics/route.ts",
+    "src/app/api/portfolio/route.ts",
+    "src/app/api/worker/health/route.ts",
+    "src/app/api/studio/generate/route.ts",
+    "src/app/api/generations/route.ts",
+    "src/app/portfolio/**/*.ts",
+    "src/app/portfolio/**/*.tsx",
+    "src/app/dashboard/**/*.ts",
+    "src/app/dashboard/**/*.tsx",
+    "src/app/creators/page.tsx",
+    "src/app/creators/layout.tsx",
+    "src/app/production/page.tsx",
+    "src/app/production/layout.tsx",
+    "src/app/calendar/page.tsx",
+    "src/app/calendar/layout.tsx",
+    "src/app/intelligence/page.tsx",
+    "src/app/intelligence/layout.tsx",
+    "src/app/main-layout.tsx",
+    "src/app/settings/**/*.ts",
+    "src/app/settings/**/*.tsx",
+    "src/components/Sidebar.tsx",
+    "src/components/TopBar.tsx",
+    "src/components/GoogleSignInButton.tsx",
+    "src/context/WorkspaceContext.tsx",
+    "src/lib/api.ts",
+    "src/lib/featureFlags.ts",
+    "src/lib/server/v2Access.ts",
+    "src/lib/server/activityLog.ts",
+    "src/lib/server/comfyui.ts",
+    "src/lib/blueprint/createJob.ts",
+    "src/lib/blueprint/compat/mirrorToLegacy.ts",
+    "src/middleware.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    ".next"
+  ]
+}

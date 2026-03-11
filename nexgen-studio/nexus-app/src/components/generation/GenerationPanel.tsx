@@ -1,5 +1,7 @@
 'use client'
 
+import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -20,8 +22,8 @@ import { ModelTab } from './ModelTab'
 import { SamplerTab } from './SamplerTab'
 import { ControlNetTab } from './ControlNetTab'
 import { AdvancedTab } from './AdvancedTab'
-import apiFetch from '@/lib/api'
-import { useState } from 'react'
+import apiFetch from '@/lib/core/api'
+import { generationOutputLimitByPlan, normalizePlan } from '@/lib/billing/planLimits'
 
 const checkpoints = [
   { value: 'sd15', label: 'Stable Diffusion 1.5' },
@@ -41,17 +43,41 @@ const vaeOptions = [
 const widthOptions = [256, 512, 768, 1024, 1280, 1536]
 const heightOptions = [256, 512, 768, 1024, 1280, 1536]
 
+type BillingPayload = {
+  plan?: string | null
+}
+
 export function GenerationPanel() {
   const { settings, updateSetting, resetSettings, exportSettings } = useGenerationSettings()
   const [isGenerating, setIsGenerating] = useState(false)
   const [status, setStatus] = useState('')
+  const [lastJobId, setLastJobId] = useState<string | null>(null)
+  const [planTier, setPlanTier] = useState('STARTER')
+  const [batchLimit, setBatchLimit] = useState(generationOutputLimitByPlan('STARTER'))
+
+  useEffect(() => {
+    let cancelled = false
+    apiFetch('/billing/me')
+      .then(async (response) => {
+        if (!response.ok || cancelled) return
+        const payload = (await response.json().catch(() => ({}))) as BillingPayload
+        if (cancelled) return
+        const normalized = normalizePlan(payload?.plan)
+        setPlanTier(normalized)
+        setBatchLimit(generationOutputLimitByPlan(normalized))
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const handleGenerate = async () => {
     setIsGenerating(true)
     setStatus('Initializing...')
-    
+    setLastJobId(null)
     try {
-      // Build the payload for ComfyUI
+      const requestedBatch = Math.max(1, Math.min(batchLimit, Math.floor(settings.batchSize)))
       const payload = {
         positive: 'masterpiece, best quality',
         negative: 'worst quality, low quality',
@@ -63,7 +89,7 @@ export function GenerationPanel() {
         denoise: settings.denoise,
         width: settings.width,
         height: settings.height,
-        batch_size: settings.batchSize,
+        batch_size: requestedBatch,
         model: settings.checkpoint,
         vae: settings.vae,
         loras: settings.loras.filter(l => l.enabled).map(l => ({
@@ -77,16 +103,17 @@ export function GenerationPanel() {
           strength: settings.controlnetStrength,
         } : null,
       }
-      
       const response = await apiFetch('/ai/generate-image', {
         method: 'POST',
         body: JSON.stringify(payload),
       })
-      
       if (!response.ok) {
-        throw new Error('Generation failed')
+        const data = await response.json().catch(() => ({}))
+        throw new Error(typeof data.detail === 'string' ? data.detail : 'Generation failed')
       }
-      
+      const data = (await response.json()) as { jobId?: string; id?: string }
+      const jobId = data.jobId ?? data.id ?? null
+      if (jobId) setLastJobId(jobId)
       setStatus('Generation started!')
     } catch (error) {
       setStatus('Error: ' + (error as Error).message)
@@ -109,6 +136,7 @@ export function GenerationPanel() {
             </Button>
           </div>
         </div>
+        <p className="text-xs text-muted-foreground">Plan {planTier}: up to {batchLimit} outputs per request.</p>
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="model" className="w-full">
@@ -125,7 +153,7 @@ export function GenerationPanel() {
           </TabsContent>
           
           <TabsContent value="sampler" className="mt-4">
-            <SamplerTab />
+            <SamplerTab maxBatchSize={batchLimit} planLabel={planTier} />
           </TabsContent>
           
           <TabsContent value="lora" className="mt-4">
@@ -142,7 +170,7 @@ export function GenerationPanel() {
         </Tabs>
         
         {/* Generate Button */}
-        <div className="mt-6 pt-4 border-t">
+        <div className="mt-6 pt-4 border-t space-y-2">
           <Button 
             className="w-full" 
             size="lg"
@@ -151,6 +179,13 @@ export function GenerationPanel() {
           >
             {isGenerating ? status || 'Generating...' : 'Generate Image'}
           </Button>
+          {lastJobId && !isGenerating && (
+            <p className="text-center text-sm text-muted-foreground">
+              <Link href={`/generations/${lastJobId}`} className="underline hover:text-foreground">
+                View job status
+              </Link>
+            </p>
+          )}
         </div>
       </CardContent>
     </Card>

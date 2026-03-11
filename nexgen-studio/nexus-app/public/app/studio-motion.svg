@@ -1,0 +1,49 @@
+<svg width="1400" height="980" viewBox="0 0 1400 980" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="120" y1="88" x2="1286" y2="900" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#07111E"/>
+      <stop offset="1" stop-color="#152B4A"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#8EFBDA"/>
+      <stop offset="1" stop-color="#46A3FF"/>
+    </linearGradient>
+    <style>
+      .pulse { animation: pulse 2.8s ease-in-out infinite; }
+      .rise1 { animation: rise 3s ease-in-out infinite; }
+      .rise2 { animation: rise 3s ease-in-out infinite 0.45s; }
+      .rise3 { animation: rise 3s ease-in-out infinite 0.9s; }
+      .progress { animation: progress 4s ease-in-out infinite; transform-origin: left center; }
+      @keyframes pulse {
+        0%, 100% { opacity: 0.45; }
+        50% { opacity: 1; }
+      }
+      @keyframes rise {
+        0%, 100% { transform: scaleY(0.55); opacity: 0.7; }
+        50% { transform: scaleY(1); opacity: 1; }
+      }
+      @keyframes progress {
+        0%, 100% { transform: scaleX(0.3); }
+        50% { transform: scaleX(0.92); }
+      }
+    </style>
+  </defs>
+  <rect width="1400" height="980" rx="40" fill="url(#bg)"/>
+  <rect x="100" y="96" width="1200" height="788" rx="32" fill="#09101A" stroke="#7CC5FF" stroke-opacity="0.16"/>
+  <rect x="144" y="142" width="432" height="696" rx="28" fill="#111E31"/>
+  <rect x="614" y="142" width="642" height="268" rx="28" fill="#10192A"/>
+  <rect x="614" y="446" width="642" height="392" rx="28" fill="#10192A"/>
+  <circle cx="360" cy="388" r="106" fill="url(#accent)"/>
+  <rect x="282" y="548" width="156" height="18" rx="9" fill="#ECF5FF" opacity="0.85"/>
+  <rect x="304" y="580" width="112" height="12" rx="6" fill="#7EC6FF" opacity="0.45"/>
+  <rect x="666" y="198" width="540" height="74" rx="24" fill="#0F1D31"/>
+  <rect x="702" y="228" width="460" height="16" rx="8" fill="#243348"/>
+  <rect class="progress" x="702" y="228" width="460" height="16" rx="8" fill="url(#accent)"/>
+  <circle class="pulse" cx="1080" cy="236" r="18" fill="#F8FEFF"/>
+  <rect x="676" y="536" width="250" height="214" rx="24" fill="#0F1D31"/>
+  <rect x="964" y="536" width="250" height="214" rx="24" fill="#0F1D31"/>
+  <rect x="730" y="652" width="34" height="64" rx="12" fill="#2F7DFF" class="rise1"/>
+  <rect x="788" y="622" width="34" height="94" rx="12" fill="#57B5FF" class="rise2"/>
+  <rect x="846" y="586" width="34" height="130" rx="12" fill="#92F3D6" class="rise3"/>
+  <text x="1004" y="654" fill="#EAF4FF" font-family="Inter, Arial, sans-serif" font-size="28" font-weight="700">Live preview</text>
+</svg>

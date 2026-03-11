@@ -4,6 +4,7 @@
 .tmp.drivedownload/
 node_modules/
 .next/
+.next.stale/
 dist/
 build/
 .env
@@ -35,6 +36,7 @@ __pycache__/
 # --- Next.js / Node ---
 node_modules/
 .next/
+.next.stale/
 dist/
 build/
 
@@ -60,6 +62,7 @@ __pycache__/
 # --- Next.js / Node ---
 node_modules/
 .next/
+.next.stale/
 dist/
 build/
 

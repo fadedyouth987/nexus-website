@@ -38,6 +38,15 @@ export interface GenerationSettings {
   
   // Batch
   batchSize: number
+
+  // Advanced
+  clipSkip: number
+  highresFix: boolean
+  hrScale: number
+  hrSteps: number
+  hrDenoise: number
+  saveToGallery: boolean
+  randomSeedAfterGen: boolean
 }
 
 interface GenerationContextType {
@@ -68,27 +77,37 @@ const defaultSettings: GenerationSettings = {
   width: 512,
   height: 512,
   batchSize: 1,
+  clipSkip: 1,
+  highresFix: false,
+  hrScale: 2,
+  hrSteps: 20,
+  hrDenoise: 0.3,
+  saveToGallery: true,
+  randomSeedAfterGen: false,
 }
 
 const GenerationContext = createContext<GenerationContextType | undefined>(undefined)
 
 export function GenerationProvider({ children }: { children: ReactNode }) {
-  const [settings, setSettings] = useState<GenerationSettings>(defaultSettings)
-  const [loaded, setLoaded] = useState(false)
-
-  // Load from localStorage
-  useEffect(() => {
+  const [settings, setSettings] = useState<GenerationSettings>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('generationSettings')
       if (saved) {
         try {
-          setSettings({ ...defaultSettings, ...JSON.parse(saved) })
+          return { ...defaultSettings, ...JSON.parse(saved) }
         } catch {
-          setSettings(defaultSettings)
+          return defaultSettings
         }
       }
-      setLoaded(true)
     }
+    return defaultSettings
+  })
+  const [loaded, setLoaded] = useState(false)
+
+  // Mark as loaded once the first render is done (client-side)
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setLoaded(true)
   }, [])
 
   // Save to localStorage
