@@ -20,6 +20,7 @@
     "cf:preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "cf:deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
     "start": "next start",
+    "verify:deploy": "pnpm typecheck && pnpm lint && pnpm test && pnpm build",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "typecheck:baseline": "cmd /c \"mkdir tools\\baseline 2>nul & node_modules\\.bin\\tsc.cmd -p tsconfig.json --noEmit > tools\\baseline\\typecheck.txt 2>&1 & exit /b 0\"",
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx",

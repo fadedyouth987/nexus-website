@@ -170,7 +170,9 @@ export async function POST(request: Request) {
       buffer,
       kind,
     }))
-    const uploadResults = await uploadOutputs(pathPrefix, toUpload)
+    const uploadResults = await uploadOutputs(pathPrefix, toUpload, {
+      isVault: contentRating === 'nsfw',
+    })
 
     let caption = ''
     let hashtags: string[] = []

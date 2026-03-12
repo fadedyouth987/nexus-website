@@ -73,21 +73,52 @@ COMFY_VIEW_PATH=/view
 
 ### 2. Set Vercel environment variables
 
-Add the same runtime secrets from `.env.local` to the Vercel project, including:
+Add the same runtime secrets from `.env.local` to the Vercel project.
+
+Required for the web app:
 
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `SUPABASE_URL`
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `NEXTAUTH_SECRET`
 - `NEXTAUTH_URL`
 - `NEXT_PUBLIC_SITE_URL`
+
+Required if the corresponding features are enabled:
+
+- `OPENAI_API_KEY` or `OPENROUTER_API_KEY`
 - `STRIPE_SECRET_KEY`
 - `STRIPE_WEBHOOK_SECRET`
 - `NEXT_PUBLIC_STRIPE_PUBLIC_KEY`
+- `STRIPE_PRICE_TIER1_MONTHLY`
+- `STRIPE_PRICE_TIER1_YEARLY`
+- `STRIPE_PRICE_TIER2_MONTHLY`
+- `STRIPE_PRICE_TIER2_YEARLY`
+- `STRIPE_PRICE_TIER3_MONTHLY`
+- `STRIPE_PRICE_TIER3_YEARLY`
+- `STRIPE_PRICE_ENTERPRISE_MONTHLY`
+- `STRIPE_PRICE_ENTERPRISE_YEARLY`
+- `REDIS_URL`
 - `COMFYUI_BASE_URL`
 - `COMFY_SFW_URL`
 - `COMFY_NSFW_URL`
 - `COMFY_VIEW_PATH`
+- `COMFYUI_OUTPUT_BUCKET`
+- `V2_GENERATED_BUCKET`
+- `RUNPOD_API_KEY`
+- `RUNPOD_ENDPOINT_ID`
+- `SOCIAL_TOKEN_ENCRYPTION_KEY`
+- `META_APP_ID`
+- `META_APP_SECRET`
+- `META_WEBHOOK_VERIFY_TOKEN`
+- `SMS_OTP_PEPPER`
+- `SMS_PROVIDER_URL`
+- `SMS_PROVIDER_API_KEY`
+- `SMS_SENDER_ID`
+- `ADMIN_USER_IDS`
+- `ENABLE_V2_PORTFOLIO`
+- `NEXT_PUBLIC_ENABLE_V2_PORTFOLIO`
 
 ### 3. GitHub Actions deployment automation
 
@@ -110,6 +141,16 @@ vercel link
 vercel
 vercel --prod
 ```
+
+### 5. Pre-deploy verification
+
+Run the local deploy gate before shipping:
+
+```bash
+pnpm verify:deploy
+```
+
+This runs typecheck, lint, tests, and a production build in sequence.
 
 ## Project Structure
 
@@ -140,3 +181,4 @@ public/
 - The Vercel path is the recommended production deployment target for this repo.
 - Cloudflare Workers deployment is currently a poor fit for this app because the Worker bundle exceeds free-plan size limits.
 - RunPod generation requires the ComfyUI endpoint to be healthy. If the RunPod URL returns `502`, generation will fail even if the frontend is deployed.
+- On Windows PowerShell with strict execution policy, use `pnpm.cmd` instead of `pnpm` for local command execution.

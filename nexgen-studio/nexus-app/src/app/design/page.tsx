@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Brush, LayoutTemplate, Palette, Sparkles, CheckCircle2, Save } from 'lucide-react'
 import { Input } from '@/components/ui/input'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
 const DESIGN_STORAGE_KEY = 'nexus_brand_settings_v1'
 
@@ -35,10 +35,11 @@ function saveBrandSettings(settings: BrandSettings) {
 }
 
 export default function DesignPage() {
-  const [brandTone, setBrandTone] = useState('')
-  const [captionStyle, setCaptionStyle] = useState('')
-  const [selectedPreset, setSelectedPreset] = useState('viral-shortform')
-  const [selectedFormats, setSelectedFormats] = useState<string[]>(['9:16', '1:1'])
+  const [initialSettings] = useState(() => loadBrandSettings())
+  const [brandTone, setBrandTone] = useState(initialSettings.brandTone)
+  const [captionStyle, setCaptionStyle] = useState(initialSettings.captionStyle)
+  const [selectedPreset, setSelectedPreset] = useState(initialSettings.selectedPreset)
+  const [selectedFormats, setSelectedFormats] = useState<string[]>(initialSettings.selectedFormats)
   const [saved, setSaved] = useState(false)
   const [checklist, setChecklist] = useState({
     hook: true,
@@ -46,18 +47,6 @@ export default function DesignPage() {
     policy: true,
     brand: false,
   })
-
-  useEffect(() => {
-    const settings = loadBrandSettings()
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (settings.brandTone) setBrandTone(settings.brandTone)
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (settings.captionStyle) setCaptionStyle(settings.captionStyle)
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (settings.selectedPreset) setSelectedPreset(settings.selectedPreset)
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (settings.selectedFormats?.length) setSelectedFormats(settings.selectedFormats)
-  }, [])
 
   function toggleFormat(value: string) {
     setSelectedFormats((prev) =>
