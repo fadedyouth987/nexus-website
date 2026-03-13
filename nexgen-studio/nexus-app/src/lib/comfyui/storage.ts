@@ -6,8 +6,18 @@
 import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { requireEnv } from '@/lib/blueprint/env'
+import { getBlueprintSupabaseAdmin } from '@/lib/blueprint/supabaseAdmin'
 
 const SIGNED_URL_EXPIRY_SEC = 3600
+const SUPABASE_STANDARD_BUCKET = 'assets'
+
+function hasS3StorageConfig(isVault: boolean) {
+  const requiredNames = isVault
+    ? ['S3_ENDPOINT', 'S3_VAULT_BUCKET', 'S3_VAULT_ACCESS_KEY', 'S3_VAULT_SECRET_KEY']
+    : ['S3_ENDPOINT', 'S3_BUCKET', 'S3_ACCESS_KEY', 'S3_SECRET_KEY']
+
+  return requiredNames.every((name) => Boolean(process.env[name]))
+}
 
 export interface UploadResult {
   storagePath: string
@@ -58,9 +68,43 @@ export async function uploadOutput(
 ): Promise<UploadResult> {
   const isVault = options?.isVault === true
   const storagePath = `${pathPrefix}/${filename}`.replace(/\/+/g, '/')
+  const contentType = getContentType(filename, kind)
+
+  if (!hasS3StorageConfig(isVault)) {
+    if (isVault) {
+      throw new Error('Vault storage requires S3 configuration')
+    }
+
+    const admin = getBlueprintSupabaseAdmin()
+    const { error } = await admin.storage
+      .from(SUPABASE_STANDARD_BUCKET)
+      .upload(storagePath, Buffer.from(buffer), {
+        contentType,
+        upsert: true,
+      })
+
+    if (error) {
+      throw new Error(`Supabase Storage upload failed: ${error.message}`)
+    }
+
+    const { data, error: signError } = await admin.storage
+      .from(SUPABASE_STANDARD_BUCKET)
+      .createSignedUrl(storagePath, SIGNED_URL_EXPIRY_SEC)
+
+    if (signError || !data?.signedUrl) {
+      throw new Error(signError?.message || 'Failed to sign uploaded asset from Supabase Storage')
+    }
+
+    return {
+      storagePath,
+      signedUrl: data.signedUrl,
+      filename,
+      kind,
+    }
+  }
+
   const bucket = getBucket(isVault)
   const client = getClient(isVault)
-  const contentType = getContentType(filename, kind)
 
   const uploadInput = {
     Bucket: bucket,

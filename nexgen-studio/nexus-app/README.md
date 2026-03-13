@@ -133,6 +133,8 @@ Required GitHub repository secrets:
 - `VERCEL_ORG_ID`
 - `VERCEL_PROJECT_ID`
 
+The `VERCEL_PROJECT_ID` must belong to the Vercel project that owns `nexgencompany.org`. The production workflow now runs a live domain check after deploy and will fail if the custom domain serves some other app.
+
 ### 4. Manual deployment
 
 ```bash
@@ -174,6 +176,7 @@ public/
 - `pnpm build` - build the Next.js app
 - `pnpm typecheck` - run TypeScript checks
 - `pnpm lint` - run ESLint
+- `pnpm verify:domain` - verify that `nexgencompany.org` resolves and serves this app
 - `pnpm cf:build` - build Cloudflare/OpenNext output
 
 ## Notes

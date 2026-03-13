@@ -3,28 +3,20 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
-  Archive,
   BarChart3,
   Building,
-  Calendar,
-  CalendarRange,
+  BriefcaseBusiness,
+  CalendarClock,
   ChevronLeft,
   ChevronRight,
   CreditCard,
-  DollarSign,
-  Factory,
-  FileText,
-  Images,
-  Inbox,
+  FolderKanban,
   LayoutDashboard,
   LifeBuoy,
   Palette,
-  Pencil,
   Settings,
-  Share2,
-  Sparkles,
-  Users2,
-  Video,
+  Clapperboard,
+  Image,
   type LucideIcon,
 } from 'lucide-react'
 import { cn } from '@/lib/core/utils'
@@ -40,43 +32,23 @@ const homeNavItems: NavItem[] = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
 ]
 
-const createNavItems: NavItem[] = [
-  { href: '/creators', label: 'Creators', icon: Users2 },
-  { href: '/templates', label: 'Templates', icon: FileText },
+const workflowNavItems: NavItem[] = [
+  { href: '/projects', label: 'Projects', icon: FolderKanban },
+  { href: '/brand-kits', label: 'Brand Kits', icon: Palette },
+  { href: '/campaigns', label: 'Campaigns', icon: BriefcaseBusiness },
+  { href: '/schedules', label: 'Schedules', icon: CalendarClock },
+  { href: '/video-jobs', label: 'Generation Jobs', icon: Clapperboard },
+  { href: '/assets', label: 'Assets', icon: Image },
 ]
 
-const generateNavItems: NavItem[] = [
-  { href: '/studio', label: 'Studio', icon: Video },
-  { href: '/edit', label: 'Edit', icon: Pencil },
-  { href: '/design', label: 'Design', icon: Palette },
-]
-
-const contentNavItems: NavItem[] = [
-  { href: '/gallery', label: 'Gallery', icon: Images },
-  { href: '/vault', label: 'Vault', icon: Archive },
-  { href: '/production', label: 'Production', icon: Factory },
-]
-
-const automateNavItems: NavItem[] = [
-  { href: '/automation/factory', label: 'Factory', icon: Sparkles },
-  { href: '/planner', label: 'Planner', icon: CalendarRange },
-]
-
-const publishNavItems: NavItem[] = [
-  { href: '/calendar', label: 'Calendar', icon: Calendar },
-  { href: '/socials', label: 'Socials', icon: Share2 },
-  { href: '/inbox', label: 'Inbox', icon: Inbox },
-]
-
-const growNavItems: NavItem[] = [
+const insightNavItems: NavItem[] = [
   { href: '/analytics', label: 'Analytics', icon: BarChart3 },
-  { href: '/monetization', label: 'Monetization', icon: DollarSign },
   { href: '/agency', label: 'Agency', icon: Building },
 ]
 
 const systemNavItems: NavItem[] = [
+  { href: '/billing', label: 'Billing', icon: CreditCard },
   { href: '/settings', label: 'Settings', icon: Settings },
-  { href: '/settings/billing', label: 'Billing', icon: CreditCard },
   { href: '/contact', label: 'Support', icon: LifeBuoy },
 ]
 
@@ -160,7 +132,7 @@ export function Sidebar({ isCollapsed = false, toggleSidebar }: SidebarProps) {
           {!isCollapsed ? (
             <div>
               <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">Nexus Studio</div>
-              <div className="mt-2 text-xl font-semibold tracking-tight text-foreground">Creator OS</div>
+              <div className="mt-2 text-xl font-semibold tracking-tight text-foreground">AI Content SaaS</div>
             </div>
           ) : (
             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/12 text-primary">
@@ -177,12 +149,8 @@ export function Sidebar({ isCollapsed = false, toggleSidebar }: SidebarProps) {
 
       <nav className="flex flex-1 flex-col gap-5 overflow-y-auto px-1 py-2 custom-scrollbar" suppressHydrationWarning>
         <NavGroup title="Home" items={homeNavItems} pathname={pathname} isCollapsed={isCollapsed} />
-        <NavGroup title="Create" items={createNavItems} pathname={pathname} isCollapsed={isCollapsed} phase={1} />
-        <NavGroup title="Generate" items={generateNavItems} pathname={pathname} isCollapsed={isCollapsed} phase={2} />
-        <NavGroup title="Content" items={contentNavItems} pathname={pathname} isCollapsed={isCollapsed} phase={3} />
-        <NavGroup title="Automate" items={automateNavItems} pathname={pathname} isCollapsed={isCollapsed} phase={4} />
-        <NavGroup title="Publish" items={publishNavItems} pathname={pathname} isCollapsed={isCollapsed} phase={5} />
-        <NavGroup title="Grow" items={growNavItems} pathname={pathname} isCollapsed={isCollapsed} phase={6} />
+        <NavGroup title="Workflow" items={workflowNavItems} pathname={pathname} isCollapsed={isCollapsed} phase={1} />
+        <NavGroup title="Insights" items={insightNavItems} pathname={pathname} isCollapsed={isCollapsed} phase={2} />
         <div className="mt-auto border-t border-border/60 pt-5">
           <NavGroup title="System" items={systemNavItems} pathname={pathname} isCollapsed={isCollapsed} />
         </div>

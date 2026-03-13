@@ -16,29 +16,21 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { CommandPalette } from '@/app/studio/CommandPalette'
+import { CommandPalette } from '@/components/generation/studio/CommandPalette'
 import { SITE_NAME } from '@/lib/sitemap'
 import { WorkflowStepper } from './WorkflowStepper'
 
 const navTitles: Array<{ prefix: string; title: string }> = [
   { prefix: '/dashboard', title: 'Dashboard' },
-  { prefix: '/creators', title: 'Creators' },
-  { prefix: '/templates', title: 'Templates' },
-  { prefix: '/studio', title: 'Studio' },
-  { prefix: '/edit', title: 'Edit' },
-  { prefix: '/design', title: 'Design' },
-  { prefix: '/gallery', title: 'Gallery' },
-  { prefix: '/vault', title: 'Vault' },
-  { prefix: '/production', title: 'Production' },
-  { prefix: '/automation/factory', title: 'Factory' },
-  { prefix: '/automation', title: 'Automation' },
-  { prefix: '/planner', title: 'Planner' },
-  { prefix: '/calendar', title: 'Calendar' },
-  { prefix: '/socials', title: 'Socials' },
-  { prefix: '/inbox', title: 'Inbox' },
+  { prefix: '/projects', title: 'Projects' },
+  { prefix: '/brand-kits', title: 'Brand Kits' },
+  { prefix: '/campaigns', title: 'Campaigns' },
+  { prefix: '/schedules', title: 'Schedules' },
+  { prefix: '/video-jobs', title: 'Generation Jobs' },
+  { prefix: '/assets', title: 'Assets' },
   { prefix: '/analytics', title: 'Analytics' },
-  { prefix: '/monetization', title: 'Monetization' },
   { prefix: '/agency', title: 'Agency' },
+  { prefix: '/billing', title: 'Billing' },
   { prefix: '/settings/verification', title: 'Age & NSFW' },
   { prefix: '/settings/billing', title: 'Billing' },
   { prefix: '/settings/team', title: 'Team' },
@@ -63,23 +55,15 @@ export function TopBar() {
   }, [pathname])
 
   const primaryAction = useMemo(() => {
-    if (pathname.startsWith('/creators')) return { label: 'Open Studio', href: '/studio' }
-    if (pathname.startsWith('/templates')) return { label: 'Open Studio', href: '/studio' }
-    if (pathname.startsWith('/studio')) return { label: 'Edit output', href: '/edit' }
-    if (pathname.startsWith('/edit')) return { label: 'View Gallery', href: '/gallery' }
-    if (pathname.startsWith('/design')) return { label: 'View Gallery', href: '/gallery' }
-    if (pathname.startsWith('/gallery')) return { label: 'Schedule content', href: '/calendar' }
-    if (pathname.startsWith('/vault')) return { label: 'View Gallery', href: '/gallery' }
-    if (pathname.startsWith('/production')) return { label: 'View Gallery', href: '/gallery' }
-    if (pathname.startsWith('/automation/factory')) return { label: 'Open Planner', href: '/planner' }
-    if (pathname.startsWith('/planner')) return { label: 'View Calendar', href: '/calendar' }
-    if (pathname.startsWith('/calendar')) return { label: 'Connect socials', href: '/socials' }
-    if (pathname.startsWith('/socials')) return { label: 'Open Planner', href: '/planner' }
-    if (pathname.startsWith('/inbox')) return { label: 'Connect socials', href: '/socials' }
-    if (pathname.startsWith('/analytics')) return { label: 'Monetization', href: '/monetization' }
-    if (pathname.startsWith('/monetization')) return { label: 'View Analytics', href: '/analytics' }
-    if (pathname.startsWith('/agency')) return { label: 'View Analytics', href: '/analytics' }
-    return { label: 'Get started', href: '/creators' }
+    if (pathname.startsWith('/projects')) return { label: 'Brand kits', href: '/brand-kits' }
+    if (pathname.startsWith('/brand-kits')) return { label: 'Campaigns', href: '/campaigns' }
+    if (pathname.startsWith('/campaigns')) return { label: 'Schedules', href: '/schedules' }
+    if (pathname.startsWith('/schedules')) return { label: 'Generation jobs', href: '/video-jobs' }
+    if (pathname.startsWith('/video-jobs')) return { label: 'Assets', href: '/assets' }
+    if (pathname.startsWith('/assets')) return { label: 'Analytics', href: '/analytics' }
+    if (pathname.startsWith('/analytics')) return { label: 'Agency', href: '/agency' }
+    if (pathname.startsWith('/agency')) return { label: 'Billing', href: '/billing' }
+    return { label: 'Open projects', href: '/projects' }
   }, [pathname])
 
   return (
@@ -114,7 +98,7 @@ export function TopBar() {
                 className="flex w-full max-w-lg items-center gap-2 rounded-full border border-border/70 bg-background/80 px-4 py-2 text-sm text-muted-foreground shadow-inner transition-colors hover:border-primary/30 hover:bg-background"
               >
                 <Search className="h-4 w-4 text-muted-foreground/60" />
-                <span className="flex-1 text-left">Search flows, creators, or assets...</span>
+                <span className="flex-1 text-left">Search projects, briefs, jobs, or assets...</span>
                 <kbd className="rounded border border-border/70 bg-card px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
                   Ctrl+K
                 </kbd>

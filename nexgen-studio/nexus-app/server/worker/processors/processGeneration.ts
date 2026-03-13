@@ -10,7 +10,18 @@ import { mirrorAsset, mirrorJobStatus } from '../engines/mirror'
 import { getBlueprintSignedGetUrl } from '../../../src/lib/blueprint/storageSign'
 import { detectBackend } from '../../../src/lib/comfyui/generator'
 import { downloadRunPodAsset, submitRunPodJob, waitForRunPodJob } from '../../../src/lib/comfyui/runpod'
+import { resolveGenerationRunTokenCost } from '../../../src/lib/billing/tokenCosts'
 import type { ComfyUIWorkflow } from '../../../src/lib/comfyui/types'
+import { classifyUnderlyingGenerationFailure } from '../../../src/modules/video-jobs/service'
+import { getVideoJobByGenerationJobId } from '../../../src/modules/video-jobs/repository'
+import { recordUsageEvent } from '../../../src/modules/usage-events'
+
+class GenerationCancelledError extends Error {
+  constructor(message = 'Generation cancelled') {
+    super(message)
+    this.name = 'GenerationCancelledError'
+  }
+}
 
 function normalizeComfyProgress(event: any) {
   if (event?.type === 'progress') {
@@ -54,11 +65,19 @@ function extractOutputs(historyEntry: any) {
   return outputs
 }
 
-async function waitForOutputs(baseUrl: string, promptId: string, mode: 'IMAGE' | 'VIDEO') {
+async function waitForOutputs(
+  baseUrl: string,
+  promptId: string,
+  mode: 'IMAGE' | 'VIDEO',
+  shouldAbort?: () => Promise<boolean>
+) {
   const timeoutMs = mode === 'VIDEO' ? 20 * 60_000 : 10 * 60_000
   const start = Date.now()
 
   while (Date.now() - start < timeoutMs) {
+    if (shouldAbort && await shouldAbort()) {
+      throw new GenerationCancelledError()
+    }
     const history = await fetchHistory(baseUrl, promptId)
     const outputs = extractOutputs(history?.[promptId])
     if (outputs.length > 0) {
@@ -78,12 +97,80 @@ type ResolvedOutput = {
   download: () => Promise<Buffer>
 }
 
+async function findDurableVideoJobForGeneration(generationJobId: string) {
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const linkedJob = await getVideoJobByGenerationJobId(generationJobId)
+    if (linkedJob) {
+      return linkedJob
+    }
+
+    if (attempt < 4) {
+      await new Promise((resolve) => setTimeout(resolve, 300))
+    }
+  }
+
+  return null
+}
+
+function getWorkflowTemplateId(metadata: Record<string, unknown>) {
+  return typeof metadata.workflowTemplateId === 'string' ? metadata.workflowTemplateId : null
+}
+
+async function recordGenerationUsageEvent(params: {
+  generationJobId: string
+  eventName: 'job_completed' | 'usage_finalized' | 'job_failed' | 'job_cancelled' | 'credits_released'
+  units: number
+  unitType: 'count' | 'credits'
+  provider?: string | null
+  metadata?: Record<string, unknown>
+}) {
+  const durableJob = await findDurableVideoJobForGeneration(params.generationJobId)
+  if (!durableJob) {
+    return
+  }
+
+  const workflowTemplateId = getWorkflowTemplateId(durableJob.metadata)
+  await recordUsageEvent({
+    eventKey: `${durableJob.id}:attempt:${durableJob.retry_count}:${params.eventName}`,
+    orgId: durableJob.org_id,
+    userId: durableJob.created_by,
+    projectId: durableJob.project_id,
+    campaignId: durableJob.campaign_id,
+    videoJobId: durableJob.id,
+    generationJobId: params.generationJobId,
+    workflowTemplateId,
+    eventName: params.eventName,
+    jobKind: durableJob.job_kind,
+    provider: params.provider ?? durableJob.provider,
+    units: params.units,
+    unitType: params.unitType,
+    metadata: {
+      retryCount: durableJob.retry_count,
+      source: 'generation.worker',
+      ...(params.metadata ?? {}),
+    },
+  })
+}
+
+async function safeRecordGenerationUsageEvent(params: Parameters<typeof recordGenerationUsageEvent>[0]) {
+  try {
+    await recordGenerationUsageEvent(params)
+  } catch (error) {
+    console.error('Failed to record generation usage event', {
+      generationJobId: params.generationJobId,
+      eventName: params.eventName,
+      error: error instanceof Error ? error.message : error,
+    })
+  }
+}
+
 async function runDirectComfyGeneration(
   baseUrl: string,
   job: BlueprintJobRecord,
   admin: any,
   promptId: string | null,
-  resolvedWorkflow: ComfyUIWorkflow
+  resolvedWorkflow: ComfyUIWorkflow,
+  shouldAbort?: () => Promise<boolean>
 ) {
   const clientId = `worker-${job.id}`
   let resolvedPromptId = promptId
@@ -108,7 +195,7 @@ async function runDirectComfyGeneration(
   })
 
   try {
-    const outputs = await waitForOutputs(baseUrl, resolvedPromptId, job.mode)
+    const outputs = await waitForOutputs(baseUrl, resolvedPromptId, job.mode, shouldAbort)
     return {
       promptId: resolvedPromptId,
       outputs: outputs.map((output) => ({
@@ -130,7 +217,8 @@ async function runRunPodGeneration(
   job: BlueprintJobRecord,
   admin: any,
   promptId: string | null,
-  resolvedWorkflow: ComfyUIWorkflow
+  resolvedWorkflow: ComfyUIWorkflow,
+  shouldAbort?: () => Promise<boolean>
 ) {
   let resolvedPromptId = promptId
 
@@ -161,6 +249,7 @@ async function runRunPodGeneration(
 
   const jobResult = await waitForRunPodJob(resolvedPromptId, {
     timeoutMs: job.mode === 'VIDEO' ? 1_200_000 : 600_000,
+    shouldCancel: shouldAbort,
     onProgress: async (status) => {
       const normalizedStatus = status === 'IN_QUEUE' ? 'queued' : 'running'
       const percent = status === 'COMPLETED' ? 100 : status === 'IN_PROGRESS' ? 60 : 10
@@ -228,6 +317,69 @@ async function upsertGeneratedAsset(admin: any, job: BlueprintJobRecord, asset: 
   return data
 }
 
+async function isGenerationCancelled(admin: any, jobId: string) {
+  const { data, error } = await admin
+    .from('generation_jobs')
+    .select('status')
+    .eq('id', jobId)
+    .maybeSingle()
+
+  if (error) {
+    throw error
+  }
+
+  return data?.status === 'CANCELED'
+}
+
+async function throwIfGenerationCancelled(admin: any, jobId: string) {
+  if (await isGenerationCancelled(admin, jobId)) {
+    throw new GenerationCancelledError()
+  }
+}
+
+async function releaseReservedCreditsIfNeeded(admin: any, job: BlueprintJobRecord) {
+  const { count, error: existingError } = await admin
+    .from('credit_ledger')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', job.user_id)
+    .eq('ref_type', 'GenerationJob')
+    .eq('ref_id', job.id)
+    .gt('delta', 0)
+
+  if (existingError) {
+    throw existingError
+  }
+
+  const { data: templateRow } = await admin
+    .from('workflow_templates')
+    .select('base_cost_credits')
+    .eq('id', job.workflow_template_id)
+    .maybeSingle()
+
+  if (!templateRow?.base_cost_credits) {
+    return 0
+  }
+
+  const releaseAmount = resolveGenerationRunTokenCost({
+    type: job.mode,
+    templateBaseCostCredits: Number(templateRow.base_cost_credits || 0) || null,
+  })
+
+  if ((count || 0) > 0) {
+    return releaseAmount
+  }
+
+  await admin.from('credit_ledger').insert({
+    user_id: job.user_id,
+    delta: releaseAmount,
+    reason: 'RELEASE_RESERVE',
+    ref_type: 'GenerationJob',
+    ref_id: job.id,
+  })
+
+  return releaseAmount
+}
+
 export async function processGeneration(jobId: string) {
   const admin = getWorkerSupabaseAdmin()
 
@@ -240,9 +392,11 @@ export async function processGeneration(jobId: string) {
   if (jobError || !job) {
     throw new Error('JOB_NOT_FOUND')
   }
-  if (job.status === 'READY') {
+  if (job.status === 'READY' || job.status === 'CANCELED') {
     return
   }
+
+  await throwIfGenerationCancelled(admin, job.id)
 
   const { data: user, error: uErr } = await admin
     .from('blueprint_users')
@@ -294,47 +448,57 @@ export async function processGeneration(jobId: string) {
   if (refImageUrl) {
     finalInputs.reference_image_url = refImageUrl
   }
-  const resolvedWorkflow = resolveWorkflow(
-    template.comfy_workflow_json || {},
-    template.variables_json || {},
-    finalInputs
-  ) as ComfyUIWorkflow
-
-  await admin
-    .from('generation_jobs')
-    .update({
-      status: 'GENERATING',
-      attempt: Number(job.attempt || 0) + 1,
-      resolved_workflow_json: resolvedWorkflow,
-      progress_json: {
-        status: 'running',
-        percent: 0,
-        message: 'Starting',
-        updatedAt: new Date().toISOString(),
-      },
-    })
-    .eq('id', job.id)
-
-  await publishJobEvent(job.id, { type: 'status', status: 'GENERATING', percent: 0 })
-
   let promptId = job.prompt_id as string | null
   const backend = detectBackend()
+  const reservedCredits = resolveGenerationRunTokenCost({
+    type: job.mode,
+    templateBaseCostCredits: Number(template?.base_cost_credits || 0) || null,
+  })
 
   try {
+    const resolvedWorkflow = resolveWorkflow(
+      template.comfy_workflow_json || {},
+      template.variables_json || {},
+      finalInputs
+    ) as ComfyUIWorkflow
+
+    await throwIfGenerationCancelled(admin, job.id)
+
+    await admin
+      .from('generation_jobs')
+      .update({
+        status: 'GENERATING',
+        attempt: Number(job.attempt || 0) + 1,
+        resolved_workflow_json: resolvedWorkflow,
+        progress_json: {
+          status: 'running',
+          percent: 0,
+          message: 'Starting',
+          updatedAt: new Date().toISOString(),
+        },
+      })
+      .eq('id', job.id)
+      .neq('status', 'CANCELED')
+
+    await publishJobEvent(job.id, { type: 'status', status: 'GENERATING', percent: 0 })
+
+    const shouldAbort = () => isGenerationCancelled(admin, job.id)
     const execution =
       backend === 'runpod'
-        ? await runRunPodGeneration(job, admin, promptId, resolvedWorkflow)
+        ? await runRunPodGeneration(job, admin, promptId, resolvedWorkflow, shouldAbort)
         : await runDirectComfyGeneration(
             comfyBaseUrl(job.content_policy),
             job,
             admin,
             promptId,
-            resolvedWorkflow
+            resolvedWorkflow,
+            shouldAbort
           )
     promptId = execution.promptId
     const isVault = job.content_policy === 'NSFW'
 
     for (const output of execution.outputs) {
+      await throwIfGenerationCancelled(admin, job.id)
       const buffer = await output.download()
 
       const key = outputKey({
@@ -378,6 +542,8 @@ export async function processGeneration(jobId: string) {
       })
     }
 
+    await throwIfGenerationCancelled(admin, job.id)
+
     const { data: firstAsset } = await admin
       .from('generated_assets')
       .select('*')
@@ -406,14 +572,106 @@ export async function processGeneration(jobId: string) {
           : {},
       })
       .eq('id', job.id)
+      .neq('status', 'CANCELED')
 
     await mirrorJobStatus(admin, {
       ...job,
       status: 'READY',
     })
 
+    await safeRecordGenerationUsageEvent({
+      generationJobId: job.id,
+      eventName: 'job_completed',
+      units: 1,
+      unitType: 'count',
+      provider: backend,
+      metadata: {
+        promptId,
+        assetCount: execution.outputs.length,
+      },
+    })
+    await safeRecordGenerationUsageEvent({
+      generationJobId: job.id,
+      eventName: 'usage_finalized',
+      units: reservedCredits,
+      unitType: 'credits',
+      provider: backend,
+      metadata: {
+        promptId,
+        assetCount: execution.outputs.length,
+      },
+    })
+
     await publishJobEvent(job.id, { type: 'status', status: 'READY', percent: 100 })
   } catch (error) {
+    const cancelledDuringExecution =
+      error instanceof GenerationCancelledError ||
+      (
+        error instanceof Error &&
+        error.message.toLowerCase().includes('cancelled') &&
+        await isGenerationCancelled(admin, job.id)
+      )
+
+    if (cancelledDuringExecution) {
+      await admin
+        .from('generation_jobs')
+        .update({
+          status: 'CANCELED',
+          prompt_id: promptId,
+          error: error.message,
+          progress_json: {
+            status: 'cancelled',
+            percent: 100,
+            message: error.message,
+            updatedAt: new Date().toISOString(),
+          },
+        })
+        .eq('id', job.id)
+        .not('status', 'eq', 'READY')
+
+      const releasedCredits = await releaseReservedCreditsIfNeeded(admin, job)
+
+      await mirrorJobStatus(admin, {
+        ...job,
+        status: 'CANCELED',
+        error: error.message,
+      })
+
+      await publishJobEvent(job.id, {
+        type: 'status',
+        status: 'CANCELED',
+        message: error.message,
+      })
+
+      await safeRecordGenerationUsageEvent({
+        generationJobId: job.id,
+        eventName: 'job_cancelled',
+        units: 1,
+        unitType: 'count',
+        provider: backend,
+        metadata: {
+          promptId,
+          failureCode: 'provider_cancelled',
+          message: error.message,
+        },
+      })
+      if (releasedCredits > 0) {
+        await safeRecordGenerationUsageEvent({
+          generationJobId: job.id,
+          eventName: 'credits_released',
+          units: releasedCredits,
+          unitType: 'credits',
+          provider: backend,
+          metadata: {
+            promptId,
+            reason: 'cancelled',
+          },
+        })
+      }
+
+      return
+    }
+
     await admin
       .from('generation_jobs')
       .update({
@@ -423,21 +681,7 @@ export async function processGeneration(jobId: string) {
       })
       .eq('id', job.id)
 
-    const { data: templateRow } = await admin
-      .from('workflow_templates')
-      .select('base_cost_credits')
-      .eq('id', job.workflow_template_id)
-      .maybeSingle()
-
-    if (templateRow?.base_cost_credits) {
-      await admin.from('credit_ledger').insert({
-        user_id: job.user_id,
-        delta: Number(templateRow.base_cost_credits),
-        reason: 'RELEASE_RESERVE',
-        ref_type: 'GenerationJob',
-        ref_id: job.id,
-      })
-    }
+    const releasedCredits = await releaseReservedCreditsIfNeeded(admin, job)
 
     await mirrorJobStatus(admin, {
       ...job,
@@ -450,6 +694,32 @@ export async function processGeneration(jobId: string) {
       status: 'FAILED',
       message: error instanceof Error ? error.message : 'Generation failed',
     })
+
+    await safeRecordGenerationUsageEvent({
+      generationJobId: job.id,
+      eventName: 'job_failed',
+      units: 1,
+      unitType: 'count',
+      provider: backend,
+      metadata: {
+        promptId,
+        failureCode: classifyUnderlyingGenerationFailure(error instanceof Error ? error.message : null),
+        message: error instanceof Error ? error.message : 'Generation failed',
+      },
+    })
+    if (releasedCredits > 0) {
+      await safeRecordGenerationUsageEvent({
+        generationJobId: job.id,
+        eventName: 'credits_released',
+        units: releasedCredits,
+        unitType: 'credits',
+        provider: backend,
+        metadata: {
+          promptId,
+          reason: 'failed',
+        },
+      })
+    }
 
     throw error
   }

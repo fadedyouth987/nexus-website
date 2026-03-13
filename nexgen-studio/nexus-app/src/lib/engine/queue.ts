@@ -1,4 +1,5 @@
 import { getBlueprintRedis } from '@/lib/blueprint/redis'
+import { toBullMqQueueName } from '@/server/providers/queue/queueName'
 
 export const ENGINE_AUTOPILOT_QUEUE = 'engine:autopilot'
 export const ENGINE_SERIES_QUEUE = 'engine:series'
@@ -45,7 +46,7 @@ export async function enqueueEngineJob(opts: {
 }) {
   const connection = getBlueprintRedis()
   const Queue = loadQueue()
-  const queue = new Queue(opts.queueName, { connection })
+  const queue = new Queue(toBullMqQueueName(opts.queueName), { connection })
 
   try {
     const job = await queue.add(opts.jobName, opts.payload, {

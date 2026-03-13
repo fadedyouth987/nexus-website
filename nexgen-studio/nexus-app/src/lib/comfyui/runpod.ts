@@ -134,15 +134,21 @@ export async function waitForRunPodJob(
     pollIntervalMs?: number
     timeoutMs?: number
     onProgress?: (status: string) => void
+    shouldCancel?: () => Promise<boolean>
   } = {}
 ): Promise<RunPodJobResponse> {
   const pollIntervalMs = options.pollIntervalMs ?? 2000
   const timeoutMs = options.timeoutMs ?? 600_000 // 10 min default
   const onProgress = options.onProgress ?? (() => {})
+  const shouldCancel = options.shouldCancel
 
   const deadline = Date.now() + timeoutMs
 
   while (Date.now() < deadline) {
+    if (shouldCancel && await shouldCancel()) {
+      throw new Error(`RunPod job ${jobId} failed: CANCELLED`)
+    }
+
     const job = await getRunPodJobStatus(jobId)
 
     onProgress(job.status)

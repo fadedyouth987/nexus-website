@@ -81,6 +81,8 @@ export async function mirrorJobStatusToLegacy(opts: {
         ? 'in_progress'
         : opts.job.status === 'READY'
           ? 'completed'
+          : opts.job.status === 'CANCELED'
+            ? 'failed'
           : opts.job.status === 'FAILED'
             ? 'failed'
             : 'queued'

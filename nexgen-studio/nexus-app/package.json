@@ -9,6 +9,7 @@
     "dev:web": "next dev",
     "dev:worker": "tsx server/worker/index.ts",
     "worker:health": "node tools/worker-health-check.mjs",
+    "verify:domain": "node tools/verify-vercel-domain.mjs",
     "openclaw": "powershell -ExecutionPolicy Bypass -File .\\tools\\openclaw.ps1",
     "openclaw:gateway": "powershell -ExecutionPolicy Bypass -File .\\tools\\openclaw.ps1 gateway run",
     "openclaw:test-telegram": "powershell -ExecutionPolicy Bypass -File .\\tools\\openclaw.ps1 message send --channel telegram --target 8514952353 --message \"OpenClaw test from nexus-app\"",

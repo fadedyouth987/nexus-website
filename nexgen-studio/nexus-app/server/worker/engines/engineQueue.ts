@@ -9,6 +9,7 @@ import { processAutopilotItem } from '../processors/processAutopilotItem'
 import { processSeriesEpisode } from '../processors/processSeriesEpisode'
 import { processModelValidationJob } from '../jobs/modelValidationJob'
 import { processModelClassifierJob } from '../jobs/modelClassifierJob'
+import { toBullMqQueueName } from '../../../src/server/providers/queue/queueName'
 
 function concurrency(name: string, fallback: number) {
   const value = Number(process.env[name] || fallback)
@@ -17,7 +18,7 @@ function concurrency(name: string, fallback: number) {
 
 export function startEngineWorkers() {
   const modelWorker = new Worker(
-    ENGINE_MODEL_QUEUE,
+    toBullMqQueueName(ENGINE_MODEL_QUEUE),
     async (job: any) => {
       const payload = job.data as { kind?: string; modelId?: string; reservedCredits?: number } | undefined
       if (!payload?.kind || typeof payload.modelId !== 'string') {
@@ -49,7 +50,7 @@ export function startEngineWorkers() {
   )
 
   const autopilotWorker = new Worker(
-    ENGINE_AUTOPILOT_QUEUE,
+    toBullMqQueueName(ENGINE_AUTOPILOT_QUEUE),
     async (job: any) => {
       const payload = job.data as { kind?: string; planItemId?: string } | undefined
       if (payload?.kind !== 'autopilot_item' || typeof payload.planItemId !== 'string') {
@@ -67,7 +68,7 @@ export function startEngineWorkers() {
   )
 
   const seriesWorker = new Worker(
-    ENGINE_SERIES_QUEUE,
+    toBullMqQueueName(ENGINE_SERIES_QUEUE),
     async (job: any) => {
       const payload = job.data as { kind?: string; seriesEpisodeId?: string } | undefined
       if (payload?.kind !== 'series_episode' || typeof payload.seriesEpisodeId !== 'string') {

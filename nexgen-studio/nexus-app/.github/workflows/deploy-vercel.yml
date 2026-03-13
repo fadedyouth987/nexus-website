@@ -116,3 +116,10 @@ jobs:
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      - name: Verify custom domain serves this app
+        run: pnpm verify:domain
+        env:
+          DEPLOY_VERIFY_URL: https://nexgencompany.org
+          DEPLOY_VERIFY_HOST: nexgencompany.org
+          DEPLOY_VERIFY_MARKERS: AI Influencer Nexus,Nexus Studio
