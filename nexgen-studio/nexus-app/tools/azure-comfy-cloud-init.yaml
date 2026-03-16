@@ -1,0 +1,34 @@
+#cloud-config
+package_update: true
+package_upgrade: false
+packages:
+  - docker.io
+  - caddy
+
+write_files:
+  - path: /etc/caddy/Caddyfile
+    permissions: "0644"
+    content: |
+      __COMFY_SFW_HOST__, __COMFY_NSFW_HOST__ {
+          encode zstd gzip
+          reverse_proxy 127.0.0.1:8188
+      }
+  - path: /opt/nexus/comfy-run-example.sh
+    permissions: "0755"
+    content: |
+      #!/usr/bin/env bash
+      set -euo pipefail
+      echo "Replace the image and volume mounts below with your ComfyUI runtime."
+      echo "This repo expects ComfyUI to listen on 127.0.0.1:8188 behind Caddy."
+      # Example only:
+      # docker run -d --restart unless-stopped \
+      #   --name comfyui \
+      #   -p 127.0.0.1:8188:8188 \
+      #   -v /opt/comfy/models:/app/models \
+      #   your-comfyui-image:tag
+
+runcmd:
+  - systemctl enable --now docker
+  - systemctl enable --now caddy
+  - mkdir -p /opt/nexus
+  - chmod +x /opt/nexus/comfy-run-example.sh

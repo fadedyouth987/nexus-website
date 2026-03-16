@@ -1,0 +1,23 @@
+resource_group_name = "nexus-prod-rg"
+location            = "eastus"
+zone_name           = "nexgencompany.org"
+manage_dns          = false
+admin_username      = "azureuser"
+ssh_public_key      = "ssh-ed25519 AAAA..."
+
+vm_name        = "nexus-comfy-01"
+vm_size        = "Standard_NC4as_T4_v3"
+web_subdomain  = ""
+web_a_record_ip = "76.76.21.21"
+# Best current option: keep the existing authoritative DNS provider and apex web record in place.
+# Set manage_dns = true only if you intend to move the DNS zone into Azure DNS.
+# For a subdomain host instead of the apex, use:
+# web_subdomain    = "www"
+# web_cname_target = "cname.vercel-dns.com"
+
+comfy_sfw_subdomain  = "comfy-sfw"
+comfy_nsfw_subdomain = "comfy-nsfw"
+
+ssh_allowed_cidrs = [
+  "203.0.113.15/32"
+]
