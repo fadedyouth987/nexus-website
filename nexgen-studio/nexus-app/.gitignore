@@ -17,3 +17,6 @@ tools/baseline/
 
 # Supabase CLI local cache (do not commit)
 supabase/.temp/
+
+# OpenNext build output (never commit; may contain env snapshots)
+.open-next/
