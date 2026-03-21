@@ -55,6 +55,7 @@
   /* Refined Spacing System */
   --content-max-width: 1600px;
   --content-padding: 1.5rem;
+  --content-padding-wide: clamp(1.25rem, 2.5vw, 2rem);
   --section-gap: 2.5rem;
   --page-header-gap: 3rem;
   --card-padding: 1.5rem;
@@ -95,8 +96,8 @@
   --destructive: oklch(0.55 0.2 25);
   --destructive-foreground: oklch(0.99 0 0);
   
-  --border: oklch(0.91 0.005 285);
-  --input: oklch(0.91 0.005 285);
+  --border: oklch(0.88 0.006 285);
+  --input: oklch(0.9 0.005 285);
   --ring: oklch(0.55 0.18 255 / 0.3);
   --surface-elevated: oklch(1 0 0 / 0.78);
   --surface-muted: oklch(0.975 0.004 285 / 0.82);
@@ -148,6 +149,68 @@
   --sidebar-border: oklch(0.22 0.015 285);
 }
 
+/* Marketing landing — lux motion (no JS; honors reduced motion) */
+@keyframes lux-orb-drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  33% {
+    transform: translate3d(4%, 7%, 0) scale(1.06);
+  }
+  66% {
+    transform: translate3d(-5%, 4%, 0) scale(0.94);
+  }
+}
+
+@keyframes lux-grid-flow {
+  0% {
+    background-position: 0 0, 0 0;
+  }
+  100% {
+    background-position: 72px 72px, 72px 72px;
+  }
+}
+
+@keyframes lux-title-shine {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+@keyframes lux-scan {
+  0% {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.35;
+  }
+  85% {
+    opacity: 0.35;
+  }
+  100% {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+}
+
+@keyframes lux-pulse-dot {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.65;
+    transform: scale(1.15);
+  }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -156,17 +219,40 @@
     @apply bg-background text-foreground antialiased;
     font-size: 15px;
     letter-spacing: -0.01em;
-    background-image: 
-      radial-gradient(at 0% 0%, oklch(0.65 0.16 255 / 0.03) 0px, transparent 50%),
-      radial-gradient(at 100% 0%, oklch(0.65 0.16 255 / 0.02) 0px, transparent 50%);
-    background-attachment: fixed;
+  }
+}
+
+@layer utilities {
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    border-radius: 9999px;
+    background-color: var(--border);
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: var(--muted-foreground);
   }
 }
 
 /* Custom Lux Components */
 @layer components {
   .lux-card {
-    @apply rounded-2xl border bg-card/50 backdrop-blur-sm shadow-sm transition-all duration-300 hover:shadow-md hover:bg-card;
+    @apply rounded-2xl border bg-card backdrop-blur-sm shadow-sm transition-all duration-300 hover:shadow-md;
   }
   
   .lux-button-primary {
@@ -174,7 +260,30 @@
   }
 
   .app-page-shell {
-    @apply mx-auto w-full max-w-[var(--content-max-width)] space-y-[var(--section-gap)] px-[var(--content-padding)];
+    @apply w-full space-y-[var(--section-gap)];
+  }
+
+  /** Dashboard main scroll region: depth + structure without heavy motion */
+  .app-dashboard-main {
+    @apply relative flex-1 overflow-y-auto;
+    background-color: var(--background);
+    background-image: radial-gradient(
+      ellipse 100% 70% at 50% -25%,
+      oklch(0.58 0.14 268 / 0.07) 0%,
+      transparent 52%
+    );
+  }
+
+  .dark .app-dashboard-main {
+    background-image: radial-gradient(
+      ellipse 100% 70% at 50% -25%,
+      oklch(0.48 0.14 268 / 0.18) 0%,
+      transparent 55%
+    );
+  }
+
+  .app-dashboard-inner {
+    @apply mx-auto w-full max-w-[var(--content-max-width)] px-[var(--content-padding-wide)] pb-10 pt-8 sm:pb-12 sm:pt-10;
   }
 
   .app-section-header {
@@ -266,10 +375,14 @@
   }
 
   .app-hero-shell {
-    @apply relative overflow-hidden rounded-[var(--radius-panel)] border border-border/70 bg-[var(--surface-elevated)] p-6 shadow-[var(--shadow-hero)] backdrop-blur-xl sm:p-8 lg:p-10;
+    @apply relative overflow-hidden rounded-[var(--radius-panel)] border border-primary/12 bg-[var(--surface-elevated)] p-6 shadow-[var(--shadow-hero)] backdrop-blur-xl sm:p-8 lg:p-10;
     background-image:
       radial-gradient(circle at top right, oklch(0.65 0.16 255 / 0.16), transparent 32%),
       linear-gradient(180deg, oklch(1 0 0 / 0.06), transparent 46%);
+  }
+
+  .dark .app-hero-shell {
+    border-color: oklch(0.62 0.14 265 / 0.28);
   }
 
   .app-hero-grid {
@@ -282,5 +395,249 @@
 
   .app-metric-card {
     @apply rounded-[var(--radius-card)] border border-border/65 bg-background/70 px-4 py-4 shadow-sm backdrop-blur;
+  }
+
+  /* —— Landing: futuristic glam layer —— */
+  .landing-lux-root {
+    @apply relative isolate;
+  }
+
+  .landing-lux-backdrop {
+    pointer-events: none;
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+  }
+
+  .landing-lux-orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(72px);
+    opacity: 0.42;
+    animation: lux-orb-drift 22s ease-in-out infinite;
+    will-change: transform;
+  }
+
+  .landing-lux-orb-1 {
+    width: min(52vw, 520px);
+    height: min(52vw, 520px);
+    top: -12%;
+    left: -8%;
+    background: radial-gradient(
+      circle,
+      oklch(0.72 0.22 300 / 0.55) 0%,
+      oklch(0.6 0.18 255 / 0.2) 45%,
+      transparent 70%
+    );
+    animation-delay: 0s;
+  }
+
+  .landing-lux-orb-2 {
+    width: min(48vw, 480px);
+    height: min(48vw, 480px);
+    top: 28%;
+    right: -10%;
+    background: radial-gradient(
+      circle,
+      oklch(0.68 0.2 200 / 0.45) 0%,
+      oklch(0.55 0.14 255 / 0.18) 50%,
+      transparent 68%
+    );
+    animation-delay: -7s;
+    animation-duration: 26s;
+  }
+
+  .landing-lux-orb-3 {
+    width: min(42vw, 420px);
+    height: min(42vw, 420px);
+    bottom: -8%;
+    left: 22%;
+    background: radial-gradient(
+      circle,
+      oklch(0.75 0.18 330 / 0.35) 0%,
+      oklch(0.58 0.16 280 / 0.15) 55%,
+      transparent 72%
+    );
+    animation-delay: -14s;
+    animation-duration: 19s;
+  }
+
+  .landing-lux-grid {
+    position: absolute;
+    inset: 0;
+    opacity: 0.4;
+    background-image:
+      linear-gradient(oklch(0.55 0.12 280 / 0.06) 1px, transparent 1px),
+      linear-gradient(90deg, oklch(0.55 0.12 280 / 0.06) 1px, transparent 1px);
+    background-size: 72px 72px;
+    mask-image: radial-gradient(ellipse 85% 65% at 50% 35%, black 20%, transparent 75%);
+    animation: lux-grid-flow 48s linear infinite;
+  }
+
+  .dark .landing-lux-grid {
+    opacity: 0.35;
+    background-image:
+      linear-gradient(oklch(0.75 0.1 280 / 0.08) 1px, transparent 1px),
+      linear-gradient(90deg, oklch(0.75 0.1 280 / 0.08) 1px, transparent 1px);
+  }
+
+  .landing-lux-content {
+    @apply relative z-[1];
+  }
+
+  /*
+   * Gradient headline: only clip when supported. If `background-clip: text` fails,
+   * `color: transparent` + full-box gradient reads as a solid light slab (bad on prod).
+   */
+  .landing-lux-title {
+    color: var(--foreground);
+  }
+
+  @supports ((-webkit-background-clip: text) or (background-clip: text)) {
+    .landing-lux-title {
+      background-image: linear-gradient(
+        105deg,
+        var(--foreground) 0%,
+        oklch(0.62 0.2 290) 28%,
+        oklch(0.68 0.18 220) 52%,
+        oklch(0.58 0.16 300) 78%,
+        var(--foreground) 100%
+      );
+      background-size: 200% auto;
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      -webkit-text-fill-color: transparent;
+      animation: lux-title-shine 10s ease-in-out infinite;
+    }
+  }
+
+  @media (forced-colors: active) {
+    .landing-lux-title {
+      background-image: none;
+      -webkit-background-clip: unset;
+      background-clip: unset;
+      -webkit-text-fill-color: CanvasText;
+      color: CanvasText;
+      animation: none;
+    }
+  }
+
+  .landing-lux-hero-panel {
+    @apply relative overflow-hidden rounded-[var(--radius-panel)] border border-primary/15 shadow-[var(--shadow-panel)];
+    background: linear-gradient(
+      145deg,
+      oklch(1 0 0 / 0.5) 0%,
+      oklch(0.97 0.02 285 / 0.35) 45%,
+      oklch(0.95 0.04 280 / 0.4) 100%
+    );
+  }
+
+  .dark .landing-lux-hero-panel {
+    background: linear-gradient(
+      145deg,
+      oklch(0.2 0.02 285 / 0.6) 0%,
+      oklch(0.18 0.04 280 / 0.45) 50%,
+      oklch(0.16 0.05 300 / 0.5) 100%
+    );
+  }
+
+  .landing-lux-hero-panel::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      180deg,
+      transparent 0%,
+      oklch(0.65 0.15 255 / 0.06) 50%,
+      transparent 100%
+    );
+    animation: lux-scan 11s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  .landing-lux-stat {
+    @apply relative overflow-hidden transition-[transform,box-shadow] duration-500;
+    transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .landing-lux-stat:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 22px 50px -24px oklch(0.55 0.2 280 / 0.35);
+  }
+
+  .landing-lux-stat::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 10%;
+    right: 10%;
+    height: 1px;
+    border-radius: 9999px;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      oklch(0.7 0.2 290 / 0.65),
+      oklch(0.65 0.18 220 / 0.5),
+      transparent
+    );
+    opacity: 0;
+    transition: opacity 0.35s ease;
+    pointer-events: none;
+  }
+
+  .landing-lux-stat:hover::after {
+    opacity: 1;
+  }
+
+  .landing-lux-card {
+    @apply relative overflow-hidden transition-[transform,box-shadow,border-color] duration-500;
+    transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .landing-lux-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 28px 70px -28px oklch(0.5 0.18 270 / 0.4);
+    border-color: oklch(0.6 0.16 280 / 0.35);
+  }
+
+  .landing-lux-kicker {
+    @apply relative inline-flex items-center gap-2;
+  }
+
+  .landing-lux-kicker::before {
+    content: '';
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 9999px;
+    background: oklch(0.65 0.22 290);
+    box-shadow: 0 0 12px oklch(0.65 0.22 290 / 0.9);
+    animation: lux-pulse-dot 2.4s ease-in-out infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .landing-lux-orb,
+    .landing-lux-grid,
+    .landing-lux-title,
+    .landing-lux-hero-panel::before,
+    .landing-lux-kicker::before {
+      animation: none !important;
+    }
+
+    .landing-lux-title {
+      background-image: none;
+      -webkit-background-clip: unset;
+      background-clip: unset;
+      -webkit-text-fill-color: currentColor;
+      color: var(--foreground);
+    }
+
+    .landing-lux-stat:hover,
+    .landing-lux-card:hover {
+      transform: none;
+    }
+
   }
 }

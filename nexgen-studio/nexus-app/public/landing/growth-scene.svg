@@ -1,32 +1,24 @@
-<svg width="1200" height="900" viewBox="0 0 1200 900" fill="none" xmlns="http://www.w3.org/2000/svg">
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="900" viewBox="0 0 1200 900" fill="none" aria-hidden="true">
   <defs>
-    <linearGradient id="bg" x1="138" y1="102" x2="1060" y2="792" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#10111D"/>
-      <stop offset="1" stop-color="#24183A"/>
-    </linearGradient>
-    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="1">
-      <stop stop-color="#FFBE78"/>
-      <stop offset="1" stop-color="#7B77FF"/>
+    <linearGradient id="g1" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" stop-color="#34d399" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="#5b7cff" stop-opacity="0.5"/>
     </linearGradient>
   </defs>
-  <rect width="1200" height="900" rx="42" fill="url(#bg)"/>
-  <rect x="92" y="90" width="1016" height="720" rx="34" fill="#131725" stroke="#B9A6FF" stroke-opacity="0.18"/>
-  <text x="150" y="184" fill="#F8F5FF" font-family="Inter, Arial, sans-serif" font-size="38" font-weight="700">Growth dashboard</text>
-  <rect x="148" y="228" width="430" height="232" rx="28" fill="#171D2C"/>
-  <rect x="612" y="228" width="438" height="232" rx="28" fill="#171D2C"/>
-  <rect x="148" y="494" width="902" height="268" rx="28" fill="#171D2C"/>
-  <rect x="190" y="302" width="64" height="106" rx="22" fill="#FFBE78"/>
-  <rect x="276" y="266" width="64" height="142" rx="22" fill="#D799FF"/>
-  <rect x="362" y="226" width="64" height="182" rx="22" fill="#9A8BFF"/>
-  <rect x="448" y="186" width="64" height="222" rx="22" fill="#7B77FF"/>
-  <text x="652" y="300" fill="#F8F5FF" font-family="Inter, Arial, sans-serif" font-size="30" font-weight="700">Conversion</text>
-  <path d="M654 386C710 342 764 314 812 318C858 322 898 348 936 350C972 352 1002 336 1024 308" stroke="url(#accent)" stroke-width="18" stroke-linecap="round"/>
-  <circle cx="688" cy="360" r="14" fill="#FFBE78"/>
-  <circle cx="806" cy="326" r="14" fill="#D799FF"/>
-  <circle cx="934" cy="348" r="14" fill="#7B77FF"/>
-  <text x="190" y="574" fill="#F8F5FF" font-family="Inter, Arial, sans-serif" font-size="30" font-weight="700">A/B tests across content, timing, and funnels</text>
-  <rect x="190" y="620" width="212" height="18" rx="9" fill="#FFBE78" opacity="0.75"/>
-  <rect x="190" y="652" width="442" height="14" rx="7" fill="#9A8BFF" opacity="0.3"/>
-  <rect x="824" y="578" width="182" height="144" rx="28" fill="url(#accent)"/>
-  <text x="874" y="656" fill="#130F20" font-family="Inter, Arial, sans-serif" font-size="48" font-weight="800">3.4x</text>
+  <rect width="1200" height="900" rx="32" fill="#0f0d14"/>
+  <rect x="80" y="120" width="1040" height="660" rx="24" fill="#16131f" stroke="#2a2438" stroke-width="2"/>
+  <path d="M140 680 L220 560 L320 600 L460 400 L580 480 L720 320 L880 380 L1040 240 L1060 680 Z" fill="url(#g1)" stroke="#34d399" stroke-width="2" opacity="0.9"/>
+  <polyline points="140,680 220,560 320,600 460,400 580,480 720,320 880,380 1040,240" fill="none" stroke="#6ee7b7" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <g fill="#252036" stroke="#2a2438">
+    <rect x="120" y="720" width="140" height="80" rx="10"/>
+    <rect x="280" y="720" width="140" height="80" rx="10"/>
+    <rect x="440" y="720" width="140" height="80" rx="10"/>
+    <rect x="600" y="720" width="140" height="80" rx="10"/>
+  </g>
+  <rect x="140" y="160" width="240" height="72" rx="12" fill="#1c1828" stroke="#2a2438"/>
+  <rect x="164" y="188" width="88" height="20" rx="4" fill="#34d399" opacity="0.45"/>
+  <rect x="164" y="214" width="140" height="10" rx="2" fill="#3d3558"/>
+  <rect x="400" y="160" width="240" height="72" rx="12" fill="#1c1828" stroke="#2a2438"/>
+  <rect x="424" y="188" width="100" height="20" rx="4" fill="#5b7cff" opacity="0.4"/>
+  <rect x="424" y="214" width="160" height="10" rx="2" fill="#3d3558"/>
 </svg>

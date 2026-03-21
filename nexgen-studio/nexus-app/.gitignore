@@ -10,3 +10,7 @@ tools/baseline/
 .openclaw-state/
 .openclaw-state
 
+.vercel
+
+# Visual Studio / VS Code local workspace cache
+.vs/

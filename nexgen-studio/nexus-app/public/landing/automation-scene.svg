@@ -1,31 +1,28 @@
-<svg width="1200" height="900" viewBox="0 0 1200 900" fill="none" xmlns="http://www.w3.org/2000/svg">
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="900" viewBox="0 0 1200 900" fill="none" aria-hidden="true">
   <defs>
-    <linearGradient id="bg" x1="102" y1="102" x2="1108" y2="810" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#0A1421"/>
-      <stop offset="1" stop-color="#152D35"/>
-    </linearGradient>
-    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="1">
-      <stop stop-color="#8DFFCC"/>
-      <stop offset="1" stop-color="#31A9FF"/>
+    <linearGradient id="a1" x1="0%" y1="50%" x2="100%" y2="50%">
+      <stop offset="0%" stop-color="#22d3ee"/>
+      <stop offset="100%" stop-color="#818cf8"/>
     </linearGradient>
   </defs>
-  <rect width="1200" height="900" rx="42" fill="url(#bg)"/>
-  <rect x="94" y="94" width="1012" height="712" rx="34" fill="#0D1722" stroke="#9DEBD4" stroke-opacity="0.18"/>
-  <text x="148" y="180" fill="#F3FBFF" font-family="Inter, Arial, sans-serif" font-size="38" font-weight="700">Automation runs the stack</text>
-  <rect x="146" y="228" width="216" height="112" rx="24" fill="#10202C"/>
-  <rect x="432" y="228" width="216" height="112" rx="24" fill="#10202C"/>
-  <rect x="718" y="228" width="216" height="112" rx="24" fill="#10202C"/>
-  <text x="196" y="296" fill="#9DEBD4" font-family="Inter, Arial, sans-serif" font-size="24" font-weight="700">Plan</text>
-  <text x="482" y="296" fill="#9DEBD4" font-family="Inter, Arial, sans-serif" font-size="24" font-weight="700">Schedule</text>
-  <text x="786" y="296" fill="#9DEBD4" font-family="Inter, Arial, sans-serif" font-size="24" font-weight="700">Publish</text>
-  <path d="M362 284H432" stroke="url(#accent)" stroke-width="14" stroke-linecap="round"/>
-  <path d="M648 284H718" stroke="url(#accent)" stroke-width="14" stroke-linecap="round"/>
-  <rect x="146" y="404" width="788" height="324" rx="30" fill="#101C28"/>
-  <path d="M206 640C284 540 384 494 492 522C584 546 648 606 732 598C790 594 842 560 876 514" stroke="url(#accent)" stroke-width="22" stroke-linecap="round"/>
-  <circle cx="252" cy="606" r="18" fill="#8DFFCC"/>
-  <circle cx="444" cy="534" r="18" fill="#7DE6E2"/>
-  <circle cx="616" cy="582" r="18" fill="#66C9F7"/>
-  <circle cx="854" cy="538" r="18" fill="#31A9FF"/>
-  <rect x="962" y="404" width="98" height="324" rx="30" fill="#101C28"/>
-  <rect x="988" y="596" width="46" height="102" rx="20" fill="url(#accent)"/>
+  <rect width="1200" height="900" rx="32" fill="#0f0d14"/>
+  <rect x="80" y="140" width="1040" height="620" rx="24" fill="#16131f" stroke="#2a2438" stroke-width="2"/>
+  <g stroke="url(#a1)" stroke-width="3" stroke-linecap="round" fill="none" opacity="0.85">
+    <circle cx="220" cy="320" r="36" fill="#1c1828"/>
+    <circle cx="420" cy="320" r="36" fill="#1c1828"/>
+    <circle cx="620" cy="320" r="36" fill="#1c1828"/>
+    <circle cx="820" cy="320" r="36" fill="#1c1828"/>
+    <circle cx="1020" cy="320" r="36" fill="#1c1828"/>
+    <path d="M256 320 H384 M444 320 H584 M656 320 H784 M856 320 H984"/>
+    <path d="M620 356 V480 M220 356 V440 L420 520 M820 356 V440 L620 520"/>
+  </g>
+  <rect x="140" y="560" width="920" height="160" rx="16" fill="#1c1828" stroke="#2a2438"/>
+  <rect x="172" y="592" width="200" height="96" rx="10" fill="#252036"/>
+  <rect x="396" y="592" width="200" height="96" rx="10" fill="#252036"/>
+  <rect x="620" y="592" width="200" height="96" rx="10" fill="#252036"/>
+  <rect x="844" y="592" width="184" height="96" rx="10" fill="#252036"/>
+  <rect x="172" y="612" width="120" height="10" rx="2" fill="#3d3558"/>
+  <rect x="396" y="612" width="120" height="10" rx="2" fill="#3d3558"/>
+  <rect x="620" y="612" width="120" height="10" rx="2" fill="#3d3558"/>
+  <rect x="844" y="612" width="100" height="10" rx="2" fill="#3d3558"/>
 </svg>
