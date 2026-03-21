@@ -89,28 +89,62 @@ create trigger trg_workflow_templates_updated_at
 before update on public.workflow_templates
 for each row execute function public.blueprint_set_updated_at();
 
-create table if not exists public.generation_jobs (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references public.blueprint_users(id) on delete cascade,
-  organization_id uuid not null,
-  influencer_id uuid not null references public.influencers(id) on delete restrict,
-  workflow_template_id uuid not null references public.workflow_templates(id),
-  mode workflow_type not null,
-  legacy_mode text,
-  content_policy content_policy not null default 'SFW',
-  status job_status not null default 'QUEUED',
-  prompt_id text unique,
-  progress_json jsonb not null default '{}'::jsonb,
-  inputs_json jsonb not null default '{}'::jsonb,
-  resolved_workflow_json jsonb,
-  policy_decision_json jsonb not null default '{}'::jsonb,
-  result_summary_json jsonb not null default '{}'::jsonb,
-  error text,
-  attempt int not null default 0,
-  superseded_by_job_id uuid references public.generation_jobs(id),
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
+do $$
+begin
+  if to_regclass('public.influencers') is not null then
+    execute $sql$
+      create table if not exists public.generation_jobs (
+        id uuid primary key default gen_random_uuid(),
+        user_id uuid not null references public.blueprint_users(id) on delete cascade,
+        organization_id uuid not null,
+        influencer_id uuid not null references public.influencers(id) on delete restrict,
+        workflow_template_id uuid not null references public.workflow_templates(id),
+        mode workflow_type not null,
+        legacy_mode text,
+        content_policy content_policy not null default 'SFW',
+        status job_status not null default 'QUEUED',
+        prompt_id text unique,
+        progress_json jsonb not null default '{}'::jsonb,
+        inputs_json jsonb not null default '{}'::jsonb,
+        resolved_workflow_json jsonb,
+        policy_decision_json jsonb not null default '{}'::jsonb,
+        result_summary_json jsonb not null default '{}'::jsonb,
+        error text,
+        attempt int not null default 0,
+        superseded_by_job_id uuid references public.generation_jobs(id),
+        created_at timestamptz not null default now(),
+        updated_at timestamptz not null default now()
+      )
+    $sql$;
+  else
+    raise notice 'Creating generation_jobs without influencer FK because public.influencers does not exist yet.';
+    execute $sql$
+      create table if not exists public.generation_jobs (
+        id uuid primary key default gen_random_uuid(),
+        user_id uuid not null references public.blueprint_users(id) on delete cascade,
+        organization_id uuid not null,
+        influencer_id uuid not null,
+        workflow_template_id uuid not null references public.workflow_templates(id),
+        mode workflow_type not null,
+        legacy_mode text,
+        content_policy content_policy not null default 'SFW',
+        status job_status not null default 'QUEUED',
+        prompt_id text unique,
+        progress_json jsonb not null default '{}'::jsonb,
+        inputs_json jsonb not null default '{}'::jsonb,
+        resolved_workflow_json jsonb,
+        policy_decision_json jsonb not null default '{}'::jsonb,
+        result_summary_json jsonb not null default '{}'::jsonb,
+        error text,
+        attempt int not null default 0,
+        superseded_by_job_id uuid references public.generation_jobs(id),
+        created_at timestamptz not null default now(),
+        updated_at timestamptz not null default now()
+      )
+    $sql$;
+  end if;
+end
+$$;
 
 create index if not exists generation_jobs_user_status_idx
 on public.generation_jobs (user_id, status, created_at desc);
@@ -126,30 +160,63 @@ create trigger trg_generation_jobs_updated_at
 before update on public.generation_jobs
 for each row execute function public.blueprint_set_updated_at();
 
-create table if not exists public.generated_assets (
-  id uuid primary key default gen_random_uuid(),
-  generation_job_id uuid not null references public.generation_jobs(id) on delete cascade,
-  organization_id uuid not null,
-  influencer_id uuid not null references public.influencers(id) on delete restrict,
-  kind asset_kind not null,
-  asset_variant text not null default 'main',
-  visibility asset_visibility not null default 'STANDARD',
-  storage_url text not null,
-  thumb_storage_url text,
-  mime_type text,
-  width int,
-  height int,
-  duration float,
-  is_sensitive boolean not null default false,
-  metadata_json jsonb not null default '{}'::jsonb,
-  created_at timestamptz not null default now()
-);
+do $$
+begin
+  if to_regclass('public.influencers') is not null then
+    execute $sql$
+      create table if not exists public.generated_assets (
+        id uuid primary key default gen_random_uuid(),
+        generation_job_id uuid not null references public.generation_jobs(id) on delete cascade,
+        organization_id uuid not null,
+        influencer_id uuid not null references public.influencers(id) on delete restrict,
+        kind asset_kind not null,
+        asset_variant text not null default 'main',
+        visibility asset_visibility not null default 'STANDARD',
+        storage_url text not null,
+        thumb_storage_url text,
+        mime_type text,
+        width int,
+        height int,
+        duration float,
+        is_sensitive boolean not null default false,
+        metadata_json jsonb not null default '{}'::jsonb,
+        created_at timestamptz not null default now()
+      )
+    $sql$;
+  else
+    raise notice 'Creating generated_assets without influencer FK because public.influencers does not exist yet.';
+    execute $sql$
+      create table if not exists public.generated_assets (
+        id uuid primary key default gen_random_uuid(),
+        generation_job_id uuid not null references public.generation_jobs(id) on delete cascade,
+        organization_id uuid not null,
+        influencer_id uuid not null,
+        kind asset_kind not null,
+        asset_variant text not null default 'main',
+        visibility asset_visibility not null default 'STANDARD',
+        storage_url text not null,
+        thumb_storage_url text,
+        mime_type text,
+        width int,
+        height int,
+        duration float,
+        is_sensitive boolean not null default false,
+        metadata_json jsonb not null default '{}'::jsonb,
+        created_at timestamptz not null default now()
+      )
+    $sql$;
+  end if;
+end
+$$;
 
-do $$ begin
+do $$
+begin
   alter table public.generated_assets
   add constraint generated_assets_job_kind_variant_key
   unique (generation_job_id, kind, asset_variant);
-exception when duplicate_object then null; end $$;
+exception
+  when sqlstate '42P07' then null;
+end $$;
 
 create index if not exists generated_assets_visibility_org_created_idx
 on public.generated_assets (visibility, organization_id, created_at desc);
@@ -189,12 +256,16 @@ on public.blueprint_audit_logs (user_id, created_at desc);
 create index if not exists blueprint_audit_logs_entity_idx
 on public.blueprint_audit_logs (entity_type, entity_id);
 
-alter table public.assets
-add column if not exists blueprint_job_asset_key text;
-
-create unique index if not exists assets_blueprint_job_asset_key_idx
-on public.assets (blueprint_job_asset_key)
-where blueprint_job_asset_key is not null;
+do $$
+begin
+  if to_regclass('public.assets') is not null then
+    execute 'alter table public.assets add column if not exists blueprint_job_asset_key text';
+    execute 'create unique index if not exists assets_blueprint_job_asset_key_idx on public.assets (blueprint_job_asset_key) where blueprint_job_asset_key is not null';
+  else
+    raise notice 'Skipping public.assets blueprint key because public.assets does not exist yet.';
+  end if;
+end
+$$;
 
 alter table public.blueprint_users enable row level security;
 alter table public.workflow_templates enable row level security;

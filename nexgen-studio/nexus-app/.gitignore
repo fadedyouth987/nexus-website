@@ -14,3 +14,6 @@ tools/baseline/
 
 # Visual Studio / VS Code local workspace cache
 .vs/
+
+# Supabase CLI local cache (do not commit)
+supabase/.temp/

@@ -5,7 +5,7 @@
 Run these in Supabase SQL Editor:
 
 - `supabase/migrations/0001_blueprint_exec_layer.sql`
-- `supabase/migrations/0002_no_dup_constraints.sql`
+- `supabase/migrations/000201_no_dup_constraints.sql`
 - `supabase/migrations/0003_v2_agency_tables.sql`
 - `supabase/migrations/0004_v2_agency_functions.sql`
 - `supabase/migrations/0005_v2_agency_rls.sql`

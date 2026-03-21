@@ -4,6 +4,35 @@ import { toBullMqQueueName } from './queueName'
 
 const queues = new Map<string, Queue>()
 
+function loadRedis() {
+  const req = eval('require') as NodeRequire
+  return req('ioredis')
+}
+
+function redisConnectionOptions() {
+  return {
+    connectTimeout: 5_000,
+    maxRetriesPerRequest: null as null,
+    retryStrategy(times: number) {
+      return times > 1 ? null : 100
+    },
+  }
+}
+
+function buildConnection() {
+  if (process.env.REDIS_URL) {
+    const IORedis = loadRedis()
+    return new IORedis(process.env.REDIS_URL, redisConnectionOptions())
+  }
+
+  return {
+    host: process.env.REDIS_HOST || '127.0.0.1',
+    port: Number(process.env.REDIS_PORT || 6379),
+    password: process.env.REDIS_PASSWORD || undefined,
+    ...redisConnectionOptions(),
+  }
+}
+
 function getQueue(queueName: string) {
   const normalizedQueueName = toBullMqQueueName(queueName)
   const existing = queues.get(normalizedQueueName)
@@ -11,14 +40,9 @@ function getQueue(queueName: string) {
     return existing
   }
 
-  const connection = {
-    host: process.env.REDIS_HOST || '127.0.0.1',
-    port: Number(process.env.REDIS_PORT || 6379),
-    password: process.env.REDIS_PASSWORD || undefined,
-    maxRetriesPerRequest: null as null,
-  }
-
-  const queue = new Queue(normalizedQueueName, { connection })
+  const queue = new Queue(normalizedQueueName, {
+    connection: buildConnection(),
+  })
   queues.set(normalizedQueueName, queue)
   return queue
 }

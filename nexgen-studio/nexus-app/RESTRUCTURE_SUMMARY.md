@@ -12,9 +12,10 @@
 ## New structure overview
 
 - `src/app/(marketing)` now contains public/marketing routes such as landing, pricing, auth, legal, onboarding, and support pages.
-- `src/app/(app)` now contains logged-in product routes such as dashboard, creators, studio, gallery, automation, planning, and settings.
+- `src/app/(dashboard)` now contains logged-in product routes such as dashboard, creators, studio, gallery, automation, planning, and settings.
 - `src/app/(admin)` now contains the admin console routes.
 - `src/app/api` was left in place so API behavior and route URLs remain intact.
+- The canonical rebuilt API surface for the new route-group/module architecture is the additive SaaS set under `src/app/api` such as `projects`, `brand-kits`, `campaigns`, `scheduled-content-runs`, `video-jobs`, and `assets`; older endpoints remain for compatibility during migration.
 - `src/components/layout/AppShell.tsx` is now the shared authenticated shell for app and admin experiences.
 - `src/components/generation/studio` now contains studio-specific generation components.
 - `src/components/admin` now contains reusable admin page scaffolding.
@@ -23,9 +24,9 @@
 ## Key files moved
 
 - Public routes moved from `src/app/*` into `src/app/(marketing)/*`.
-- Product routes moved from `src/app/*` into `src/app/(app)/*`.
+- Product routes moved from `src/app/*` into `src/app/(dashboard)/*`.
 - Admin routes moved from `src/app/admin/*` into `src/app/(admin)/admin/*`.
-- Studio helper components moved from `src/app/(app)/studio/*` into `src/components/generation/studio/*`.
+- Studio helper components moved from `src/app/(dashboard)/studio/*` into `src/components/generation/studio/*`.
 - The old `src/app/main-layout.tsx` was replaced by `src/components/layout/AppShell.tsx`.
 
 ## Components created or merged
@@ -34,7 +35,7 @@
 - Created `src/components/admin/AdminPageShell.tsx`.
 - Created `src/components/marketing/MarketingFooter.tsx`.
 - Replaced many duplicated section layouts with:
-  - `src/app/(app)/layout.tsx`
+  - `src/app/(dashboard)/layout.tsx`
   - `src/app/(marketing)/layout.tsx`
   - `src/app/(admin)/layout.tsx`
 - Updated admin pages to use shared admin scaffolding instead of repeating container/loading/error shells.
@@ -49,7 +50,7 @@
 ## Validation
 
 - `pnpm.cmd typecheck` passed.
-- `pnpm.cmd lint` completed with warnings only.
+- `pnpm.cmd lint` passed.
 - `pnpm.cmd build` passed.
 
 ## Manual review still recommended

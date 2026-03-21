@@ -24,7 +24,7 @@
 |------|--------|----------|
 | ComfyUI integration | ✅ Full client, workflow builder, SFW/NSFW URLs | `src/lib/comfyui/`, `server/worker/core/comfyClient.ts` |
 | Influencer schema | ✅ `lora_model_path`, personality, voice | `influencers` table |
-| Planner LLM | ✅ Chat → brief → strategy → 30-day calendar | `src/lib/planner/`, `src/app/planner/`, `/api/planner/chat` |
+| Planner LLM | ✅ Chat → brief → strategy → 30-day calendar | `src/lib/planner/`, `src/app/(dashboard)/planner/`, `/api/planner/chat` |
 | Content items | ✅ `prompt_seed`, `post_type`, platform, publish_date | `planner_content_items` |
 | Queue to scheduler | ✅ Planner → content_v2 + schedules_v2 | `queuePlannerToScheduler()` |
 | Social scheduling | ✅ BullMQ, Instagram/Facebook adapters | `publishScheduledContent`, `/api/social/publish` |
@@ -168,12 +168,12 @@ alter table planner_content_items add column if not exists media_type text
 
 | Purpose | Files |
 |---------|-------|
-| Influencer creation UI | `src/app/create/` (new wizard), `src/components/creators/` |
-| Planner + influencer | `src/app/planner/page.tsx`, `src/components/planner/ChatPanel.tsx`, `src/lib/planner/actions.ts` |
+| Influencer creation UI | `src/app/(dashboard)/create/` (new wizard), `src/components/creators/` |
+| Planner + influencer | `src/app/(dashboard)/planner/page.tsx`, `src/components/planner/ChatPanel.tsx`, `src/lib/planner/actions.ts` |
 | Worker identity injection | `server/worker/processors/processGeneration.ts`, `server/worker/core/workflow.ts` |
 | Queue planner → content | `src/lib/automation/queuePlannerToScheduler.ts` |
 | Content generation | `src/app/api/content/generate/route.ts`, `server/worker/processors/processSafeImageV2.ts` |
-| Age gate | `src/proxy.ts` or `src/middleware.ts`, `src/app/settings/verification/page.tsx` |
+| Age gate | `src/proxy.ts` or `src/middleware.ts`, `src/app/(dashboard)/settings/verification/page.tsx` |
 | Workflow templates | Add to `variables_json.fields`: `lora_path` (node/path for LoRA loader), `reference_image_url` (node/path for LoadImage/IP-Adapter). Worker auto-injects when influencer has these set. |
 
 ---

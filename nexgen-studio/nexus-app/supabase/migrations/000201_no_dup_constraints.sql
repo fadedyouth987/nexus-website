@@ -1,8 +1,17 @@
-do $$ begin
-  alter table public.generated_assets
-  add constraint generated_assets_job_kind_variant_key
-  unique (generation_job_id, kind, asset_variant);
-exception when duplicate_object then null; end $$;
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'generated_assets_job_kind_variant_key'
+      and conrelid = 'public.generated_assets'::regclass
+  ) then
+    alter table public.generated_assets
+      add constraint generated_assets_job_kind_variant_key
+      unique (generation_job_id, kind, asset_variant);
+  end if;
+end
+$$;
 
 create index if not exists generated_assets_visibility_org_created_idx
 on public.generated_assets (visibility, organization_id, created_at desc);

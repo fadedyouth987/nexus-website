@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import apiFetch from '@/lib/core/api'
 import { Input } from '@/components/ui/input'
@@ -40,6 +40,21 @@ type ScheduledContentRunValues = {
   durationSeconds: string
 }
 
+function resolveInitialTimezone(
+  mode: 'create' | 'edit',
+  initialTimezone?: string
+) {
+  if (initialTimezone) {
+    return initialTimezone
+  }
+
+  if (mode !== 'create' || typeof window === 'undefined') {
+    return 'UTC'
+  }
+
+  return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
+}
+
 export function ScheduledContentRunForm({
   mode,
   projectOptions,
@@ -70,7 +85,7 @@ export function ScheduledContentRunForm({
     frequency: initialValues?.frequency ?? 'daily',
     dayOfWeek: initialValues?.dayOfWeek ?? '1',
     timeOfDay: initialValues?.timeOfDay ?? '09:00',
-    timezone: initialValues?.timezone ?? 'UTC',
+    timezone: resolveInitialTimezone(mode, initialValues?.timezone),
     jobsPerRun: initialValues?.jobsPerRun ?? '1',
     provider: initialValues?.provider ?? 'comfyui',
     jobKind: initialValues?.jobKind ?? 'image',
@@ -80,17 +95,6 @@ export function ScheduledContentRunForm({
     aspectRatio: initialValues?.aspectRatio ?? '9:16',
     durationSeconds: initialValues?.durationSeconds ?? '10',
   })
-
-  useEffect(() => {
-    if (mode !== 'create') {
-      return
-    }
-
-    const browserTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone
-    if (browserTimezone && browserTimezone !== values.timezone && values.timezone === 'UTC') {
-      setValues((current) => ({ ...current, timezone: browserTimezone }))
-    }
-  }, [mode, values.timezone])
 
   async function submit() {
     const payload = {
@@ -294,6 +298,7 @@ export function ScheduledContentRunForm({
         <Label htmlFor="schedule-timezone">Timezone</Label>
         <Input
           id="schedule-timezone"
+          suppressHydrationWarning
           value={values.timezone}
           onChange={(event) => setValues((prev) => ({ ...prev, timezone: event.target.value }))}
           placeholder="Australia/Adelaide"
