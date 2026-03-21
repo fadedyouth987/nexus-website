@@ -1,6 +1,9 @@
 import Link from 'next/link'
 import { AppShell } from '@/components/layout/AppShell'
 
+/** Avoid SSG/prerender when admin routes pull auth/DB without full env at build time */
+export const dynamic = 'force-dynamic'
+
 const adminLinks = [
   { href: '/admin/users', label: 'Users' },
   { href: '/admin/workspaces', label: 'Workspaces' },

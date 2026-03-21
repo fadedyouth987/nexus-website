@@ -1,16 +1,1 @@
-{
-  "projectId": "prj_zXwQJswNz3l6tIlzKRxxGLTcH1fh",
-  "orgId": "team_W4FgHnEUkknVYp7SN3B2kjx2",
-  "projectName": "nexus-website",
-  "settings": {
-    "createdAt": 1773230681006,
-    "framework": null,
-    "devCommand": null,
-    "installCommand": null,
-    "buildCommand": null,
-    "outputDirectory": null,
-    "rootDirectory": null,
-    "directoryListing": false,
-    "nodeVersion": "24.x"
-  }
-}
+{"projectId":"prj_xw37EU4x7TSHvjH88rpqnIjj2TFT","orgId":"team_JGNobAYwwXUMpc4M7NeA6Gze","projectName":"nexus-app"}

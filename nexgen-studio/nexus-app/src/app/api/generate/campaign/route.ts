@@ -15,7 +15,8 @@ import type { VariableMap } from '@/lib/workflow/types'
 import { uploadOutputs } from '@/lib/comfyui/storage'
 import { chat } from '@/lib/llm'
 
-export const maxDuration = 600
+/** Vercel Hobby max is 300s; use queue/worker for long GPU work */
+export const maxDuration = 300
 
 const CAPTION_TOKEN_COST = 2
 

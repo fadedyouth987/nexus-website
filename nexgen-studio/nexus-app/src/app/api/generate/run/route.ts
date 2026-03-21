@@ -20,7 +20,8 @@ import {
   resolveRequestedOutputCount,
 } from '@/lib/billing/planLimits'
 
-export const maxDuration = 600 // 10 min for video
+/** Vercel Hobby max is 300s; use queue/worker for long GPU work */
+export const maxDuration = 300
 
 export async function POST(request: Request) {
   const reservedCredits = { runRefId: null as string | null, cost: 0 }
