@@ -4,7 +4,8 @@ import { PageHeader } from '@/components/layout/PageHeader'
 
 export const metadata = {
   title: 'Learn | Nexus Studio',
-  description: 'Setup docs for creators, automation, publishing, verification, and support workflows.',
+  description:
+    'Explicit beta setup: live OAuth platforms, staged networks, automation pipeline, NSFW gating, and how static hosting keeps marketing fast.',
 }
 
 export default function LearnPage() {
@@ -12,7 +13,7 @@ export default function LearnPage() {
     <div className="space-y-6">
       <PageHeader
         title="Documentation & Setup"
-        description="Follow this checklist to get from account creation to automated, policy-compliant publishing."
+        description="Step-by-step truth: what ships in beta, which social connectors are live vs stubbed, and how generation latency differs from page load speed."
       />
 
       <div className="grid gap-4 lg:grid-cols-2">
@@ -102,6 +103,35 @@ export default function LearnPage() {
           <CardContent className="space-y-2 text-sm">
             <p>Open <Link className="underline" href="/contact">Contact Support</Link> and submit a ticket with severity.</p>
             <p>For billing/organization issues, use Settings {'->'} Billing/Organization/Team.</p>
+          </CardContent>
+        </Card>
+
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle>5) Speed: marketing vs in-app work</CardTitle>
+            <CardDescription>Separate perceived UI speed from GPU and queue time.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm leading-relaxed text-muted-foreground">
+            <p>
+              <strong className="text-foreground">Marketing & shell.</strong> Public pages are exported as static HTML and assets (Next.js{' '}
+              <code className="rounded bg-muted px-1 py-0.5 text-xs">output: &apos;export&apos;</code>
+              ), so first paint is bounded by CDN latency and bundle size—not by ComfyUI.
+            </p>
+            <p>
+              <strong className="text-foreground">Generation.</strong> Still and video jobs enqueue to workers and GPUs you operate; wall-clock
+              time includes model load, step count, and concurrency. Watch worker health inside the dashboard when jobs stall.
+            </p>
+            <p>
+              <strong className="text-foreground">Publishing.</strong> OAuth round-trips and platform rate limits apply after Nexus hands off
+              media; only Instagram and Facebook connectors are live today—everything else in the matrix is stubbed or planned until wired.
+            </p>
+            <p>
+              For analytics scope (read-only today vs experiment roadmap), read{' '}
+              <Link className="underline" href="/analytics">
+                Analytics
+              </Link>{' '}
+              after visiting <Link className="underline" href="/intelligence">Intelligence</Link>.
+            </p>
           </CardContent>
         </Card>
       </div>

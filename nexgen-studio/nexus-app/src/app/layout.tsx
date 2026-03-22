@@ -4,8 +4,9 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { Providers } from "@/components/providers/SessionProvider";
 
 export const metadata: Metadata = {
-  title: "AI Influencer Nexus",
-  description: "The OS for AI Creators",
+  title: "Nexus Studio",
+  description:
+    "Beta OS for AI influencers: Studio generation, planner-to-publish automation, live Instagram/Facebook OAuth, read-only Intelligence analytics.",
 };
 
 export default function RootLayout({

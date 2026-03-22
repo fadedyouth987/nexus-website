@@ -33,7 +33,11 @@ export const PUBLIC_SITEMAP: SitemapLink[] = [
     ],
   },
   { href: '/studio', label: 'Studio', description: 'Generate, edit, manage assets, run workflows.' },
-  { href: '/analytics', label: 'Analytics', description: 'Growth charts, engagement, A/B testing.' },
+  {
+    href: '/analytics',
+    label: 'Analytics',
+    description: 'Intelligence metrics today; charts, funnels, and A/B experiments on the roadmap.',
+  },
   { href: '/monetization', label: 'Monetization', description: 'Paid posts, affiliate, NSFW gating, merch.' },
   { href: '/agency', label: 'Agency', description: 'Multi-creator, workspaces, reporting.' },
   { href: '/pricing', label: 'Pricing', description: 'Free, Creator, Agency tiers. Credit-based GPU.' },

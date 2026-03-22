@@ -4,8 +4,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { PageHeader } from '@/components/layout/PageHeader'
 
 export const metadata = {
-  title: 'Analytics | NexGen Studio',
-  description: 'Growth charts, engagement metrics, content performance, series analytics, A/B testing.',
+  title: 'Analytics | Nexus Studio',
+  description:
+    'What analytics does today: read-only portfolio metrics and Intelligence. Planned: charts, engagement depth, and A/B experiment management.',
 }
 
 const analyticsBlocks = [
@@ -32,7 +33,7 @@ export default function AnalyticsPage() {
     <div className="space-y-[var(--section-gap)]">
       <PageHeader
         title="Analytics"
-        description="Data-driven growth: charts, engagement, content performance, and A/B tests."
+        description="Current beta: portfolio-style metrics inside Intelligence when your workspace has data. This page lists the roadmap for charts, funnels, and true A/B runs."
         breadcrumb={[
           { label: 'Dashboard', href: '/dashboard' },
           { label: 'Analytics' },
@@ -44,6 +45,17 @@ export default function AnalyticsPage() {
         }
       />
 
+      <Card className="border-border bg-card border-emerald-500/30">
+        <CardHeader>
+          <CardTitle className="text-lg">In beta right now</CardTitle>
+          <CardDescription className="text-sm leading-relaxed">
+            Open <Link href="/intelligence">Intelligence</Link> for read-only metrics, per-creator and per-platform breakdowns, daily rollups,
+            published highlights, and upcoming schedules when your Supabase-backed workspace contains those rows. This is reporting and
+            visibility—not automated winner selection.
+          </CardDescription>
+        </CardHeader>
+      </Card>
+
       <section className="grid gap-6 md:grid-cols-2">
         {analyticsBlocks.map((block) => (
           <Card key={block.title} className="border-border bg-card">
@@ -51,6 +63,9 @@ export default function AnalyticsPage() {
               <CardTitle className="text-lg">{block.title}</CardTitle>
               <CardDescription>{block.body}</CardDescription>
             </CardHeader>
+            <CardContent className="pt-0 text-xs text-muted-foreground">
+              Planned depth: charts, exports, alerting, and deeper engagement ingestion once additional social APIs move past stub status.
+            </CardContent>
           </Card>
         ))}
       </section>
@@ -58,8 +73,15 @@ export default function AnalyticsPage() {
       <Card className="border-border bg-card">
         <CardHeader>
           <CardTitle className="text-lg">A/B testing</CardTitle>
-          <CardDescription>
-            Test captions, thumbnails, and posting times. Optimize with measurable data.
+          <CardDescription className="space-y-2 text-sm leading-relaxed">
+            <span className="block">
+              <strong className="text-foreground">Roadmap.</strong> Variant definitions for captions, thumbnails, and post times, traffic
+              splits, and statistically grounded winners are not shipped as a dedicated experiment console yet.
+            </span>
+            <span className="block">
+              <strong className="text-foreground">Today.</strong> Use Intelligence to compare what already published and iterate manually in
+              planner until experiment tooling lands.
+            </span>
           </CardDescription>
         </CardHeader>
         <CardContent className="pt-0">
