@@ -8,27 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { SITE_NAME } from '@/lib/sitemap'
-
-const VALUE_PROPS = [
-  {
-    title: 'Creation',
-    body: 'Photoreal images, talking-head video, style and character presets. Identity consistency across every asset.',
-    image: '/landing/creation-scene.svg',
-    alt: 'Creation studio preview artwork',
-  },
-  {
-    title: 'Automation',
-    body: 'Content, scheduling, engagement, and monetization in one OS. Set rules once; your influencers run.',
-    image: '/landing/automation-scene.svg',
-    alt: 'Automation pipeline artwork',
-  },
-  {
-    title: 'Growth',
-    body: 'Analytics, A/B testing, multi-platform scheduling, and 30-day autopilot. Scale without the grind.',
-    image: '/landing/growth-scene.svg',
-    alt: 'Growth dashboard artwork',
-  },
-]
+import { BETA_CAPABILITY_CHECKLIST, HERO_STATS, VALUE_PROP_BLOCKS } from '@/lib/marketing/productTruth'
 
 export default function LandingPage() {
   const [waitlistEmail, setWaitlistEmail] = useState('')
@@ -83,10 +63,12 @@ export default function LandingPage() {
             <div className="app-section-copy space-y-4">
               <h1 className="app-section-title max-w-4xl text-4xl sm:text-5xl md:text-6xl">{SITE_NAME}</h1>
               <p className="max-w-2xl text-lg text-muted-foreground sm:text-xl">
-                Create, automate, and grow AI influencers end-to-end.
+                Create AI influencers, run planner-to-publish automation, and measure what ships—stated plainly for beta.
               </p>
               <p className="app-section-description max-w-2xl sm:text-base">
-                The full operating system from identity creation to automation, publishing, analytics, monetization, and agency workflows. Not just images, a brand that runs.
+                One product surface for Studio generation, scheduling, vaulting, monetization, and org billing. Live OAuth today covers
+                Instagram and Facebook; other networks and A/B experiment tooling are staged—see the checklist below and the Learn docs
+                for the exact matrix.
               </p>
             </div>
             <div className="flex flex-wrap gap-3">
@@ -105,18 +87,12 @@ export default function LandingPage() {
               </Button>
             </div>
             <div className="app-stat-grid max-w-2xl">
-              <div className="app-surface-card p-4">
-                <div className="text-2xl font-semibold">24/7</div>
-                <div className="mt-1 text-sm text-muted-foreground">Always-on content engine</div>
-              </div>
-              <div className="app-surface-card p-4">
-                <div className="text-2xl font-semibold">3x</div>
-                <div className="mt-1 text-sm text-muted-foreground">Faster launch to first funnel</div>
-              </div>
-              <div className="app-surface-card p-4">
-                <div className="text-2xl font-semibold">1 OS</div>
-                <div className="mt-1 text-sm text-muted-foreground">Studio, scheduler, and analytics</div>
-              </div>
+              {HERO_STATS.map((stat) => (
+                <div key={stat.value} className="app-surface-card p-4">
+                  <div className="text-2xl font-semibold tabular-nums">{stat.value}</div>
+                  <div className="mt-1 text-sm text-muted-foreground">{stat.label}</div>
+                </div>
+              ))}
             </div>
           </div>
 
@@ -144,11 +120,11 @@ export default function LandingPage() {
               <h2 className="app-section-title text-2xl">One platform. Three jobs.</h2>
             </div>
             <p className="app-section-description mx-auto max-w-2xl">
-              Purpose-built visuals now map to the core motions in the product.
+              Each pillar maps to real routes and workers; bullets spell out what is live, what queues on GPU, and what is still on the roadmap.
             </p>
           </div>
           <div className="grid gap-6 md:grid-cols-3">
-            {VALUE_PROPS.map((prop) => (
+            {VALUE_PROP_BLOCKS.map((prop) => (
               <Card key={prop.title} className="app-feature-card overflow-hidden">
                 <div className="border-b border-border bg-background/60 p-3">
                   <Image
@@ -156,15 +132,50 @@ export default function LandingPage() {
                     alt={prop.alt}
                     width={1200}
                     height={900}
+                    loading="lazy"
                     className="h-auto w-full rounded-2xl"
                   />
                 </div>
                 <CardHeader>
                   <CardTitle className="text-lg">{prop.title}</CardTitle>
-                  <CardDescription>{prop.body}</CardDescription>
+                  <CardDescription className="space-y-3">
+                    <span className="block font-medium text-foreground">{prop.lead}</span>
+                    <ul className="list-disc space-y-2 pl-4 text-sm text-muted-foreground">
+                      {prop.details.map((line, idx) => (
+                        <li key={`${prop.title}-${idx}`}>{line}</li>
+                      ))}
+                    </ul>
+                  </CardDescription>
                 </CardHeader>
               </Card>
             ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="border-t border-border py-16">
+        <div className="app-page-shell space-y-8">
+          <div className="app-section-header text-center">
+            <div className="app-section-kicker">Beta scope</div>
+            <h2 className="app-section-title text-2xl">What works now, what is staged, why it loads quickly</h2>
+            <p className="app-section-description mx-auto max-w-2xl">
+              No implied guarantees—this is the same story the Learn docs and social dashboard matrix use.
+            </p>
+          </div>
+          <div className="grid gap-6 md:grid-cols-3">
+            {BETA_CAPABILITY_CHECKLIST.map((item) => (
+              <Card key={item.title} className="app-feature-card">
+                <CardHeader>
+                  <CardTitle className="text-lg">{item.title}</CardTitle>
+                  <CardDescription className="text-sm leading-relaxed">{item.body}</CardDescription>
+                </CardHeader>
+              </Card>
+            ))}
+          </div>
+          <div className="text-center">
+            <Button asChild variant="outline">
+              <Link href="/learn">Open the full Learn checklist</Link>
+            </Button>
           </div>
         </div>
       </section>
@@ -177,18 +188,13 @@ export default function LandingPage() {
               <h2 className="app-section-title text-2xl">See it in action</h2>
             </div>
             <p className="app-section-description">
-              A looping motion asset now demonstrates the Studio, identity lock, scheduler, and engagement surfaces without needing a live product walkthrough.
+              Illustrative artwork—not a live screen recording. Pair it with /studio for real generation, /automation/planner for queues, and
+              /dashboard/social for connector status.
             </p>
             <div className="space-y-3 text-sm text-muted-foreground">
-              <div className="app-surface-card p-4">
-                Prompt to image generation
-              </div>
-              <div className="app-surface-card p-4">
-                Identity continuity across content
-              </div>
-              <div className="app-surface-card p-4">
-                Automated publishing and reporting
-              </div>
+              <div className="app-surface-card p-4">Studio: prompts, presets, ComfyUI-backed renders</div>
+              <div className="app-surface-card p-4">Identity: reference-driven consistency across assets</div>
+              <div className="app-surface-card p-4">Publish path: planner → dispatch → worker → live IG/FB today</div>
             </div>
           </div>
 
@@ -198,6 +204,7 @@ export default function LandingPage() {
               alt="Animated demo reel showing the Nexus Studio workflow"
               width={1600}
               height={900}
+              loading="lazy"
               unoptimized
               className="h-auto w-full rounded-[24px]"
             />
@@ -207,8 +214,11 @@ export default function LandingPage() {
 
       <section className="border-t border-border bg-muted/20 py-12">
         <div className="app-page-shell text-center">
-          <h2 className="text-xl font-semibold">Trusted by creators and agencies</h2>
-          <p className="mt-3 text-sm text-muted-foreground">Logos and testimonials go here.</p>
+          <h2 className="text-xl font-semibold">Built for agencies and solo operators</h2>
+          <p className="mx-auto mt-3 max-w-xl text-sm text-muted-foreground">
+            Multi-workspace and org billing exist in-product; public testimonials are not shown here yet. Prefer proof? Run the factory flow,
+            connect a sandbox Meta app, and watch planner → publish with your own data.
+          </p>
         </div>
       </section>
 
