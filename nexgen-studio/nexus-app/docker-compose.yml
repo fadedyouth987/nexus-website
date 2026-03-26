@@ -1,0 +1,137 @@
+# Hybrid stack: Redis + MinIO + Next (web) + worker + websocket share this repo.
+# Database: point env at Supabase (local `supabase start` or hosted). Optional `postgres`
+# service is available behind profile `local-db` for non-Supabase Postgres experiments.
+#
+# ComfyUI requires NVIDIA + profile `gpu` (fails on CPU-only machines if enabled by default).
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: nexus-redis
+    # Host 6380 avoids clashing with another Redis (or WSL/Docker proxy) already on 6379.
+    # In-compose services still use redis://redis:6379. For pnpm dev on the host: REDIS_URL=redis://127.0.0.1:6380
+    ports:
+      - '6380:6379'
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  minio:
+    image: minio/minio:latest
+    container_name: nexus-minio
+    command: server /data --console-address ':9001'
+    ports:
+      - '9000:9000'
+      - '9001:9001'
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    volumes:
+      - minio_data:/data
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    container_name: nexus-web
+    ports:
+      - '3000:3000'
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+      NEXT_PUBLIC_API_URL: ''
+      INTERNAL_API_URL: http://localhost:3000
+      REDIS_URL: redis://redis:6379
+      NEXT_PUBLIC_WS_URL: ws://localhost:3002
+      # Set these from your .env / Supabase project:
+      NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL:-}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY:-}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:-}
+      NEXTAUTH_URL: http://localhost:3000
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-change-me-in-production-min-32-chars}
+      AWS_ENDPOINT_URL: http://minio:9000
+      AWS_ACCESS_KEY_ID: minioadmin
+      AWS_SECRET_ACCESS_KEY: minioadmin
+      S3_BUCKET_NAME: nexus-assets
+      S3_PUBLIC_BASE_URL: http://localhost:9000/nexus-assets
+      COMFYUI_URL: ${COMFYUI_URL:-http://host.docker.internal:8188}
+    depends_on:
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_started
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    container_name: nexus-worker
+    environment:
+      NODE_ENV: production
+      REDIS_URL: redis://redis:6379
+      NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL:-}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:-}
+      AWS_ENDPOINT_URL: http://minio:9000
+      AWS_ACCESS_KEY_ID: minioadmin
+      AWS_SECRET_ACCESS_KEY: minioadmin
+      S3_BUCKET_NAME: nexus-assets
+      S3_PUBLIC_BASE_URL: http://localhost:9000/nexus-assets
+      COMFYUI_URL: ${COMFYUI_URL:-http://host.docker.internal:8188}
+    depends_on:
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_started
+
+  websocket:
+    build:
+      context: .
+      dockerfile: Dockerfile.websocket
+    container_name: nexus-websocket
+    ports:
+      - '3002:3002'
+    environment:
+      NODE_ENV: production
+      REDIS_URL: redis://redis:6379
+      WS_PORT: 3002
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  postgres:
+    profiles: ['local-db']
+    image: postgres:16-alpine
+    container_name: nexus-postgres
+    ports:
+      - '5433:5432'
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  comfyui:
+    profiles: ['gpu']
+    image: comfyanonymous/comfyui:latest
+    container_name: nexus-comfyui
+    ports:
+      - '8188:8188'
+    volumes:
+      - comfy_models:/app/models
+      - comfy_output:/app/output
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+volumes:
+  minio_data:
+  postgres_data:
+  comfy_models:
+  comfy_output:

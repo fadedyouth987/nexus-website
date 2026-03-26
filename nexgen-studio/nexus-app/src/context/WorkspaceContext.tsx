@@ -1,11 +1,13 @@
 'use client'
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import apiFetch from '@/lib/api';
+import apiFetch from '@/lib/core/api';
 
 interface Workspace {
   id: string;
   name: string;
+  role?: 'owner' | 'admin' | 'editor' | 'viewer' | string;
+  client_visible?: boolean;
 }
 
 interface WorkspaceContextType {
@@ -26,20 +28,27 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     const fetchWorkspaces = async () => {
       try {
         const response = await apiFetch('/workspaces');
-        if (response.status === 401) {
+        if (response.status === 401 || response.status === 403) {
+          setWorkspaces([]);
+          setCurrentWorkspace(null);
           return;
         }
         if (!response.ok) {
-          throw new Error('Failed to fetch workspaces');
+          const payload = await response.json().catch(() => ({} as { detail?: string }));
+          throw new Error(payload.detail || 'Failed to fetch workspaces');
         }
-        const data = await response.json();
+        const payload = await response.json();
+        const data = Array.isArray(payload) ? payload : [];
         setWorkspaces(data);
         if (data.length > 0) {
-          setCurrentWorkspace(data[0]);
+          setCurrentWorkspace((current) =>
+            current && data.some((workspace) => workspace.id === current.id) ? current : data[0]
+          );
+        } else {
+          setCurrentWorkspace(null);
         }
       } catch (error) {
-        console.error('Workspace fetch failed:', error);
-        // Handle error, e.g., show a toast notification
+        console.warn('Workspace fetch failed:', error);
       } finally {
         setIsLoading(false);
       }

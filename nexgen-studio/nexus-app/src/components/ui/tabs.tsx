@@ -4,7 +4,7 @@ import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
 import { Tabs as TabsPrimitive } from "radix-ui"
 
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/core/utils"
 
 function Tabs({
   className,
@@ -82,7 +82,10 @@ function TabsContent({
   return (
     <TabsPrimitive.Content
       data-slot="tabs-content"
-      className={cn("flex-1 outline-none", className)}
+      className={cn(
+        "flex-1 outline-none data-[state=inactive]:hidden",
+        className
+      )}
       {...props}
     />
   )

@@ -1,11 +1,5 @@
 'use server'
 
-import { nextAuthSignOut } from '@/auth'
-
-export async function logout() {
-  await nextAuthSignOut({ redirectTo: '/login' })
-}
-
 export async function signup(prevState: { error: string | null } | null, formData: FormData) {
   const name = formData.get('name') as string
   const email = formData.get('email') as string
@@ -20,7 +14,7 @@ export async function signup(prevState: { error: string | null } | null, formDat
   }
 
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/register`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password, name }),

@@ -1,158 +1,78 @@
 'use client'
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Slider } from '@/components/ui/slider'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Switch } from '@/components/ui/switch'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { useGenerationSettings } from '@/context/GenerationContext'
 import { LoRATab } from './LoRATab'
 import { ModelTab } from './ModelTab'
 import { SamplerTab } from './SamplerTab'
 import { ControlNetTab } from './ControlNetTab'
 import { AdvancedTab } from './AdvancedTab'
-import apiFetch from '@/lib/api'
-import { useState } from 'react'
 
-const checkpoints = [
-  { value: 'sd15', label: 'Stable Diffusion 1.5' },
-  { value: 'sd21', label: 'Stable Diffusion 2.1' },
-  { value: 'sdxl', label: 'SDXL 1.0' },
-  { value: 'pony', label: 'Pony Diffusion' },
-  { value: 'realistic', label: 'Realistic Vision' },
-]
+interface GenerationPanelProps {
+  planTier: string
+  batchLimit: number
+  tokenBalance: number | null
+}
 
-const vaeOptions = [
-  { value: 'Auto', label: 'Auto' },
-  { value: 'vae840000', label: 'VAE 840000' },
-  { value: 'vaeft', label: 'VAE FT-MSE' },
-  { value: 'kl-f8', label: 'KL-F8' },
-]
-
-const widthOptions = [256, 512, 768, 1024, 1280, 1536]
-const heightOptions = [256, 512, 768, 1024, 1280, 1536]
-
-export function GenerationPanel() {
-  const { settings, updateSetting, resetSettings, exportSettings } = useGenerationSettings()
-  const [isGenerating, setIsGenerating] = useState(false)
-  const [status, setStatus] = useState('')
-
-  const handleGenerate = async () => {
-    setIsGenerating(true)
-    setStatus('Initializing...')
-    
-    try {
-      // Build the payload for ComfyUI
-      const payload = {
-        positive: 'masterpiece, best quality',
-        negative: 'worst quality, low quality',
-        steps: settings.steps,
-        cfg: settings.cfg,
-        seed: settings.seed,
-        sampler_name: settings.sampler,
-        scheduler: settings.scheduler,
-        denoise: settings.denoise,
-        width: settings.width,
-        height: settings.height,
-        batch_size: settings.batchSize,
-        model: settings.checkpoint,
-        vae: settings.vae,
-        loras: settings.loras.filter(l => l.enabled).map(l => ({
-          name: l.name,
-          path: l.path,
-          strength: l.strength,
-        })),
-        controlnet: settings.controlnetEnabled ? {
-          model: settings.controlnetModel,
-          preprocessor: settings.controlnetPreprocessor,
-          strength: settings.controlnetStrength,
-        } : null,
-      }
-      
-      const response = await apiFetch('/ai/generate-image', {
-        method: 'POST',
-        body: JSON.stringify(payload),
-      })
-      
-      if (!response.ok) {
-        throw new Error('Generation failed')
-      }
-      
-      setStatus('Generation started!')
-    } catch (error) {
-      setStatus('Error: ' + (error as Error).message)
-    } finally {
-      setIsGenerating(false)
-    }
-  }
+export function GenerationPanel({ planTier, batchLimit, tokenBalance }: GenerationPanelProps) {
+  const { resetSettings, exportSettings } = useGenerationSettings()
 
   return (
-    <Card className="w-full">
-      <CardHeader className="pb-3">
+    <div className="app-shell-panel flex flex-col h-full rounded-[var(--radius-panel)] border border-border/60 bg-[linear-gradient(160deg,var(--surface-elevated),var(--surface-muted)_120%)] shadow-xl relative backdrop-blur-2xl">
+      <div className="flex flex-col gap-2 p-5 border-b border-border/50">
         <div className="flex justify-between items-center">
-          <CardTitle>Image Generation</CardTitle>
+          <h2 className="text-sm font-semibold tracking-wide text-foreground uppercase">Controls</h2>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={resetSettings}>
+            <Button variant="ghost" size="sm" onClick={resetSettings} className="h-7 text-xs px-2 hover:bg-muted/50">
               Reset
             </Button>
-            <Button variant="outline" size="sm" onClick={() => console.log(exportSettings())}>
+            <Button variant="ghost" size="sm" onClick={() => console.log(exportSettings())} className="h-7 text-xs px-2 hover:bg-muted/50">
               Export
             </Button>
           </div>
         </div>
-      </CardHeader>
-      <CardContent>
+        <div className="flex justify-between items-center bg-background/50 rounded-md px-3 py-2 border border-border/40">
+          <p className="text-[11px] text-muted-foreground uppercase tracking-wider">Plan: <span className="font-semibold text-foreground">{planTier}</span></p>
+          {tokenBalance !== null && (
+            <p className="text-[11px] font-semibold text-primary uppercase tracking-wider">
+              {tokenBalance.toLocaleString()} Tokens
+            </p>
+          )}
+        </div>
+      </div>
+      
+      <div className="flex-1 overflow-y-auto custom-scrollbar p-5 pt-4">
         <Tabs defaultValue="model" className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="model">Model</TabsTrigger>
-            <TabsTrigger value="sampler">Sampler</TabsTrigger>
-            <TabsTrigger value="lora">LoRA</TabsTrigger>
-            <TabsTrigger value="controlnet">ControlNet</TabsTrigger>
-            <TabsTrigger value="advanced">Advanced</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-5 h-9 mb-6 bg-muted/40 p-1">
+            <TabsTrigger value="model" className="text-xs">Model</TabsTrigger>
+            <TabsTrigger value="sampler" className="text-xs">Sampler</TabsTrigger>
+            <TabsTrigger value="lora" className="text-xs">LoRA</TabsTrigger>
+            <TabsTrigger value="controlnet" className="text-xs">CtrlNet</TabsTrigger>
+            <TabsTrigger value="advanced" className="text-xs">Adv.</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="model" className="mt-4">
+          <TabsContent value="model" className="mt-0 outline-none animate-in fade-in-50 slide-in-from-bottom-1 duration-300">
             <ModelTab />
           </TabsContent>
           
-          <TabsContent value="sampler" className="mt-4">
-            <SamplerTab />
+          <TabsContent value="sampler" className="mt-0 outline-none animate-in fade-in-50 slide-in-from-bottom-1 duration-300">
+            <SamplerTab maxBatchSize={batchLimit} planLabel={planTier} />
           </TabsContent>
           
-          <TabsContent value="lora" className="mt-4">
+          <TabsContent value="lora" className="mt-0 outline-none animate-in fade-in-50 slide-in-from-bottom-1 duration-300">
             <LoRATab />
           </TabsContent>
           
-          <TabsContent value="controlnet" className="mt-4">
+          <TabsContent value="controlnet" className="mt-0 outline-none animate-in fade-in-50 slide-in-from-bottom-1 duration-300">
             <ControlNetTab />
           </TabsContent>
           
-          <TabsContent value="advanced" className="mt-4">
+          <TabsContent value="advanced" className="mt-0 outline-none animate-in fade-in-50 slide-in-from-bottom-1 duration-300">
             <AdvancedTab />
           </TabsContent>
         </Tabs>
-        
-        {/* Generate Button */}
-        <div className="mt-6 pt-4 border-t">
-          <Button 
-            className="w-full" 
-            size="lg"
-            onClick={handleGenerate}
-            disabled={isGenerating}
-          >
-            {isGenerating ? status || 'Generating...' : 'Generate Image'}
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   )
 }

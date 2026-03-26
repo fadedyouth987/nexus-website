@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="900" viewBox="0 0 1200 900" fill="none" aria-hidden="true">
+  <defs>
+    <linearGradient id="g1" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" stop-color="#34d399" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="#5b7cff" stop-opacity="0.5"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="900" rx="32" fill="#0f0d14"/>
+  <rect x="80" y="120" width="1040" height="660" rx="24" fill="#16131f" stroke="#2a2438" stroke-width="2"/>
+  <path d="M140 680 L220 560 L320 600 L460 400 L580 480 L720 320 L880 380 L1040 240 L1060 680 Z" fill="url(#g1)" stroke="#34d399" stroke-width="2" opacity="0.9"/>
+  <polyline points="140,680 220,560 320,600 460,400 580,480 720,320 880,380 1040,240" fill="none" stroke="#6ee7b7" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <g fill="#252036" stroke="#2a2438">
+    <rect x="120" y="720" width="140" height="80" rx="10"/>
+    <rect x="280" y="720" width="140" height="80" rx="10"/>
+    <rect x="440" y="720" width="140" height="80" rx="10"/>
+    <rect x="600" y="720" width="140" height="80" rx="10"/>
+  </g>
+  <rect x="140" y="160" width="240" height="72" rx="12" fill="#1c1828" stroke="#2a2438"/>
+  <rect x="164" y="188" width="88" height="20" rx="4" fill="#34d399" opacity="0.45"/>
+  <rect x="164" y="214" width="140" height="10" rx="2" fill="#3d3558"/>
+  <rect x="400" y="160" width="240" height="72" rx="12" fill="#1c1828" stroke="#2a2438"/>
+  <rect x="424" y="188" width="100" height="20" rx="4" fill="#5b7cff" opacity="0.4"/>
+  <rect x="424" y="214" width="160" height="10" rx="2" fill="#3d3558"/>
+</svg>

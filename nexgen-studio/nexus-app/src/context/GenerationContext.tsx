@@ -1,44 +1,14 @@
 'use client'
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import {
+  defaultGenerationSettings,
+  mergeGenerationSettings,
+  type GenerationSettings,
+  type LoRASetting,
+} from '@/modules/video-jobs/generation-settings'
 
-export interface LoRASetting {
-  id: string
-  name: string
-  path: string
-  strength: number
-  enabled: boolean
-}
-
-export interface GenerationSettings {
-  // Model
-  checkpoint: string
-  vae: string
-  
-  // Sampler
-  steps: number
-  cfg: number
-  sampler: string
-  scheduler: string
-  seed: number
-  denoise: number
-  
-  // LoRAs
-  loras: LoRASetting[]
-  
-  // ControlNet
-  controlnetEnabled: boolean
-  controlnetModel: string
-  controlnetPreprocessor: string
-  controlnetStrength: number
-  
-  // Dimensions
-  width: number
-  height: number
-  
-  // Batch
-  batchSize: number
-}
+export type { GenerationSettings, LoRASetting } from '@/modules/video-jobs/generation-settings'
 
 interface GenerationContextType {
   settings: GenerationSettings
@@ -51,49 +21,32 @@ interface GenerationContextType {
   importSettings: (json: string) => void
 }
 
-const defaultSettings: GenerationSettings = {
-  checkpoint: 'sd15',
-  vae: 'Auto',
-  steps: 20,
-  cfg: 7,
-  sampler: 'euler',
-  scheduler: 'normal',
-  seed: -1,
-  denoise: 1,
-  loras: [],
-  controlnetEnabled: false,
-  controlnetModel: '',
-  controlnetPreprocessor: 'none',
-  controlnetStrength: 1,
-  width: 512,
-  height: 512,
-  batchSize: 1,
-}
-
 const GenerationContext = createContext<GenerationContextType | undefined>(undefined)
 
+/**
+ * Persisted generation UI: defaults on first paint, then `localStorage` in `useEffect` (see application-flow.md).
+ */
 export function GenerationProvider({ children }: { children: ReactNode }) {
-  const [settings, setSettings] = useState<GenerationSettings>(defaultSettings)
+  // Same initial state on server and client — hydrate from localStorage in useEffect (avoids hydration mismatch).
+  const [settings, setSettings] = useState<GenerationSettings>(defaultGenerationSettings)
   const [loaded, setLoaded] = useState(false)
 
-  // Load from localStorage
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('generationSettings')
-      if (saved) {
-        try {
-          setSettings({ ...defaultSettings, ...JSON.parse(saved) })
-        } catch {
-          setSettings(defaultSettings)
-        }
+    const raw = window.localStorage.getItem('generationSettings')
+    if (raw) {
+      try {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setSettings(mergeGenerationSettings(JSON.parse(raw)))
+      } catch {
+        /* keep defaults */
       }
-      setLoaded(true)
     }
+    setLoaded(true)
   }, [])
 
   // Save to localStorage
   useEffect(() => {
-    if (loaded && typeof window !== 'undefined') {
+    if (loaded) {
       localStorage.setItem('generationSettings', JSON.stringify(settings))
     }
   }, [settings, loaded])
@@ -125,7 +78,7 @@ export function GenerationProvider({ children }: { children: ReactNode }) {
   }
 
   const resetSettings = () => {
-    setSettings(defaultSettings)
+    setSettings(defaultGenerationSettings)
   }
 
   const exportSettings = () => {
@@ -135,7 +88,7 @@ export function GenerationProvider({ children }: { children: ReactNode }) {
   const importSettings = (json: string) => {
     try {
       const imported = JSON.parse(json)
-      setSettings({ ...defaultSettings, ...imported })
+      setSettings(mergeGenerationSettings(imported))
     } catch (e) {
       console.error('Failed to import settings:', e)
     }
