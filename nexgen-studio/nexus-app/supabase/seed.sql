@@ -1,0 +1,2 @@
+-- Intentionally empty: migrations are applied via `supabase db push`.
+-- Add seed SQL here only if you use `supabase db reset --seed` locally.
