@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import { AppHero } from '@/components/layout/AppHero'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { WorkspaceSwitcher } from './WorkspaceSwitcher'
 import { CreatorMetricsTable } from './CreatorMetricsTable'
@@ -42,18 +43,20 @@ export function AgencyDashboardClient({
 
   return (
     <div className="mx-auto max-w-7xl p-6 space-y-6" suppressHydrationWarning>
-      <Card>
-        <CardHeader>
-          <CardTitle>Agency Dashboard</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <WorkspaceSwitcher
-            workspaces={workspaces}
-            selectedWorkspaceId={selectedWorkspaceId}
-            onSelectWorkspace={setSelectedWorkspaceId}
-          />
-        </CardContent>
-      </Card>
+      <AppHero
+        eyebrow="System"
+        title="Agency Dashboard"
+        description="Manage multiple workspaces, track creator performance, and oversee production metrics."
+        actions={
+          <div className="w-64">
+            <WorkspaceSwitcher
+              workspaces={workspaces}
+              selectedWorkspaceId={selectedWorkspaceId}
+              onSelectWorkspace={setSelectedWorkspaceId}
+            />
+          </div>
+        }
+      />
 
       <div className="grid gap-4 md:grid-cols-4">
         <Card>

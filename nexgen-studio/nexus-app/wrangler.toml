@@ -1,34 +1,13 @@
-# Cloudflare Workers/Pages Configuration
-# For Cloudflare Pages with Next.js static export
-
 name = "nexus-website"
-compatibility_date = "2025-01-01"
-compatibility_flags = ["nodejs_compat"]
+main = ".open-next/worker.js"
+compatibility_date = "2026-03-11"
+compatibility_flags = ["nodejs_compat", "global_fetch_strictly_public"]
+account_id = "966a0a7b4cc0406a8301a78e7d00dfe0"
 
-# Build settings for Pages
-[build]
-command = "npm run build"
-cwd = "."
+[assets]
+directory = ".open-next/assets"
+binding = "ASSETS"
 
-# Environment variables (set in Cloudflare Dashboard or via wrangler secret)
-[env.production]
-name = "nexus-website"
-
-[env.staging]
-name = "nexus-website-staging"
-
-# KV Namespaces (if needed for caching)
-# [[kv_namespaces]]
-# binding = "CACHE"
-# id = "your-kv-namespace-id"
-
-# D1 Database (if needed)
-# [[d1_databases]]
-# binding = "DB"
-# database_name = "nexus-db"
-# database_id = "your-d1-database-id"
-
-# R2 Buckets (if needed for file storage)
-# [[r2_buckets]]
-# binding = "STORAGE"
-# bucket_name = "nexus-storage"
+[[services]]
+binding = "WORKER_SELF_REFERENCE"
+service = "nexus-website"

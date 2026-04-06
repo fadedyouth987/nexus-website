@@ -14,3 +14,9 @@ tools/baseline/
 
 # Visual Studio / VS Code local workspace cache
 .vs/
+
+# Supabase CLI local cache (do not commit)
+supabase/.temp/
+
+# OpenNext build output (never commit; may contain env snapshots)
+.open-next/

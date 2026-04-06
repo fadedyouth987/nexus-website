@@ -36,12 +36,29 @@ function normalizeVaultMode(value: unknown): 'sfw' | 'nsfw' {
   return value === 'nsfw' ? 'nsfw' : 'sfw'
 }
 
+async function debugLog(
+  hypothesisId: string,
+  message: string,
+  data: Record<string, unknown> = {},
+  runId = 'run3'
+) {
+  // #region agent log
+  await fetch('http://127.0.0.1:7810/ingest/e1fb0ad9-95e8-422a-bd38-81f121a8c64c',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a5e906'},body:JSON.stringify({sessionId:'a5e906',runId,hypothesisId,location:'src/app/api/creators/route.ts',message,data,timestamp:Date.now()})}).catch(()=>{})
+  // #endregion
+}
+
 export async function GET(request: Request) {
   if (isPortfolioV2ServerEnabled()) {
     try {
+      const { searchParams } = new URL(request.url)
+      await debugLog('H4', 'creators:get:start', {
+        portfolioV2: true,
+        org_id: searchParams.get('org_id') ?? null,
+        workspace_id: searchParams.get('workspace_id') ?? null,
+      })
+
       const supabase = await getServerSupabase(request)
       const user = await getServerUser(request)
-      const { searchParams } = new URL(request.url)
       const org = await requireOrgMembership(request, {
         supabase,
         user,
@@ -65,6 +82,12 @@ export async function GET(request: Request) {
         throw new AccessError(500, 'Failed to load creators')
       }
 
+      await debugLog('H4', 'creators:get:success', {
+        org_id: org.orgId,
+        workspace_id: workspace.workspaceId,
+        count: (data ?? []).length,
+      })
+
       return NextResponse.json({
         items: data ?? [],
         meta: {
@@ -80,6 +103,11 @@ export async function GET(request: Request) {
         typeof (error as { status?: number }).status === 'number'
           ? (error as { status: number }).status
           : 500
+
+      await debugLog('H4', 'creators:get:error', {
+        status,
+        message: error instanceof Error ? error.message : 'unknown',
+      })
 
       return NextResponse.json(
         { detail: error instanceof Error ? error.message : 'Failed to load creators' },

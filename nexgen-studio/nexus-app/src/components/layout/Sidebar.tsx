@@ -2,66 +2,13 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import {
-  Archive,
-  BookOpenText,
-  Building,
-  CalendarRange,
-  ChevronLeft,
-  ChevronRight,
-  CreditCard,
-  FileText,
-  Images,
-  Inbox,
-  LayoutDashboard,
-  LifeBuoy,
-  Palette,
-  Pencil,
-  Settings,
-  Share2,
-  Shield,
-  Users2,
-  Video,
-  Workflow,
-  type LucideIcon,
-} from 'lucide-react'
+import { ChevronLeft, ChevronRight, LayoutDashboard } from 'lucide-react'
 import { cn } from '@/lib/core/utils'
 import { Button } from '@/components/ui/button'
+import { APP_NAVIGATION, type NavItem } from '@/lib/navigation'
 
-type NavItem = {
-  href: string
-  label: string
-  icon: LucideIcon
-}
-
-const dashboardNavItems: NavItem[] = [{ href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard }]
-const planCreateNavItems: NavItem[] = [
-  { href: '/studio', label: 'Studio', icon: Video },
-  { href: '/edit', label: 'Edit', icon: Pencil },
-  { href: '/design', label: 'Design', icon: Palette },
-]
-const publishEngageNavItems: NavItem[] = [
-  { href: '/inbox', label: 'Inbox', icon: Inbox },
-  { href: '/dashboard/social', label: 'Socials', icon: Share2 },
-]
-const contentNavItems: NavItem[] = [
-  { href: '/gallery', label: 'Gallery', icon: Images },
-  { href: '/vault', label: 'Vault', icon: Archive },
-]
-const automationNavItems: NavItem[] = [
-  { href: '/automation', label: 'Automation', icon: Workflow },
-  { href: '/automation/planner', label: 'Content planner', icon: CalendarRange },
-]
-const settingsNavItems: NavItem[] = [
-  { href: '/settings', label: 'Settings', icon: Settings },
-  { href: '/settings/verification', label: 'Age & NSFW', icon: Shield },
-  { href: '/settings/billing', label: 'Billing', icon: CreditCard },
-  { href: '/settings/team', label: 'Team', icon: Users2 },
-  { href: '/settings/organization', label: 'Organization', icon: Building },
-  { href: '/learn', label: 'Documentation', icon: BookOpenText },
-  { href: '/contact', label: 'Support', icon: LifeBuoy },
-  { href: '/audit-logs', label: 'Audit Logs', icon: FileText },
-]
+// Re-export for compatibility
+export type { NavItem }
 
 type SidebarProps = {
   isCollapsed?: boolean
@@ -83,6 +30,7 @@ function navLink(item: NavItem, pathname: string, isCollapsed: boolean) {
           ? 'border-primary/30 bg-primary/12 text-primary shadow-[0_14px_30px_-20px_rgba(55,120,255,0.5)]'
           : 'border-transparent text-muted-foreground hover:border-border/70 hover:bg-background/75 hover:text-foreground'
       )}
+      title={item.description}
     >
       <Icon
         className={cn(
@@ -90,36 +38,59 @@ function navLink(item: NavItem, pathname: string, isCollapsed: boolean) {
           isActive ? 'text-primary' : 'text-muted-foreground'
         )}
       />
-      {!isCollapsed ? <span className="truncate font-medium tracking-tight">{item.label}</span> : null}
+      {!isCollapsed ? (
+        <span className="flex flex-1 items-center gap-2 truncate font-medium tracking-tight">
+          {item.label}
+          {item.badge ? (
+            <span className="rounded-full bg-primary/15 px-1.5 py-0.5 text-[9px] font-bold text-primary">
+              {item.badge}
+            </span>
+          ) : null}
+        </span>
+      ) : null}
     </Link>
   )
 }
 
 function NavGroup({
-  title,
-  items,
+  section,
   pathname,
   isCollapsed,
 }: {
-  title: string
-  items: NavItem[]
+  section: (typeof APP_NAVIGATION)[number]
   pathname: string
   isCollapsed: boolean
 }) {
+  // Skip empty sections
+  if (section.items.length === 0) return null
+
   return (
     <div className="space-y-1.5">
       {!isCollapsed ? (
-        <div className="px-3 pb-2 text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground/60">
-          {title}
+        <div className="flex items-center gap-2 px-3 pb-2">
+          {section.phase != null && (
+            <span className="flex h-4 w-4 items-center justify-center rounded-full bg-primary/15 text-[9px] font-bold text-primary">
+              {section.phase}
+            </span>
+          )}
+          <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground/60">
+            {section.label}
+          </span>
         </div>
       ) : null}
-      {items.map((item) => navLink(item, pathname, isCollapsed))}
+      {section.items.map((item) => navLink(item, pathname, isCollapsed))}
     </div>
   )
 }
 
 export function Sidebar({ isCollapsed = false, toggleSidebar }: SidebarProps) {
   const pathname = usePathname()
+
+  // Primary nav sections (always visible)
+  const primarySections = APP_NAVIGATION.filter((s) => s.id !== 'system')
+
+  // System section (at bottom)
+  const systemSection = APP_NAVIGATION.find((s) => s.id === 'system')
 
   return (
     <aside
@@ -134,10 +105,7 @@ export function Sidebar({ isCollapsed = false, toggleSidebar }: SidebarProps) {
           {!isCollapsed ? (
             <div>
               <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">Nexus Studio</div>
-              <div className="mt-2 text-xl font-semibold tracking-tight text-foreground">Creator operating system</div>
-              <p className="mt-2 text-xs leading-5 text-muted-foreground">
-                Studio, automation, publishing, and analytics in one matching shell.
-              </p>
+              <div className="mt-2 text-xl font-semibold tracking-tight text-foreground">AI Content SaaS</div>
             </div>
           ) : (
             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/12 text-primary">
@@ -152,24 +120,17 @@ export function Sidebar({ isCollapsed = false, toggleSidebar }: SidebarProps) {
         </div>
       </div>
 
-      <nav className="flex flex-1 flex-col gap-6 overflow-y-auto px-1 py-2 custom-scrollbar" suppressHydrationWarning>
-        <NavGroup title="Overview" items={dashboardNavItems} pathname={pathname} isCollapsed={isCollapsed} />
-        <NavGroup title="Creation" items={planCreateNavItems} pathname={pathname} isCollapsed={isCollapsed} />
-        <NavGroup title="Engagement" items={publishEngageNavItems} pathname={pathname} isCollapsed={isCollapsed} />
-        <NavGroup title="Management" items={contentNavItems} pathname={pathname} isCollapsed={isCollapsed} />
-        <NavGroup title="Scale" items={automationNavItems} pathname={pathname} isCollapsed={isCollapsed} />
-        <div className="mt-auto border-t border-border/60 pt-5">
-          <NavGroup title="System" items={settingsNavItems} pathname={pathname} isCollapsed={isCollapsed} />
-        </div>
-      </nav>
+      <nav className="flex flex-1 flex-col gap-5 overflow-y-auto px-1 py-2 custom-scrollbar" suppressHydrationWarning>
+        {primarySections.map((section) => (
+          <NavGroup key={section.id} section={section} pathname={pathname} isCollapsed={isCollapsed} />
+        ))}
 
-      {!isCollapsed ? (
-        <div className="app-shell-panel-muted mt-4 px-4 py-4">
-          <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">First wave</div>
-          <p className="mt-2 text-sm font-medium text-foreground">Dashboard flow now uses the landing-page language.</p>
-          <p className="mt-1 text-xs leading-5 text-muted-foreground">Core routes inherit the new shell automatically.</p>
-        </div>
-      ) : null}
+        {systemSection ? (
+          <div className="mt-auto border-t border-border/60 pt-5">
+            <NavGroup section={systemSection} pathname={pathname} isCollapsed={isCollapsed} />
+          </div>
+        ) : null}
+      </nav>
     </aside>
   )
 }

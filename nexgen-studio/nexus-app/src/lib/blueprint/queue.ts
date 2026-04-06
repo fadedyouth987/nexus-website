@@ -1,4 +1,5 @@
 import { getBlueprintRedis } from './redis'
+import { toBullMqQueueName } from '@/server/providers/queue/queueName'
 
 function loadQueue() {
   const req = eval('require') as NodeRequire
@@ -15,7 +16,7 @@ export function queueName(policy: 'SFW' | 'NSFW', type: 'IMAGE' | 'VIDEO') {
 export async function enqueueBlueprintGeneration(jobId: string, queue: string) {
   const connection = getBlueprintRedis()
   const Queue = loadQueue()
-  const q = new Queue(queue, { connection })
+  const q = new Queue(toBullMqQueueName(queue), { connection })
   try {
     await q.add(
       'generate',

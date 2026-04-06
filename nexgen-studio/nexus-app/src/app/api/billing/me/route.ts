@@ -41,9 +41,11 @@ export async function GET(request: Request) {
         ? TIER_PLANS.tier1.monthlyTokens
         : normalizedPlan === 'PRO'
           ? TIER_PLANS.tier2.monthlyTokens
-          : normalizedPlan === 'ENTERPRISE'
-            ? TIER_PLANS.enterprise.monthlyTokens
-            : 0
+          : normalizedPlan === 'VAULT'
+            ? TIER_PLANS.tier3.monthlyTokens
+            : normalizedPlan === 'ENTERPRISE'
+              ? TIER_PLANS.enterprise.monthlyTokens
+              : 0
 
     return NextResponse.json({
       balance: Math.floor(balance),

@@ -9,12 +9,7 @@ import { getBlueprintSupabaseAdmin } from '@/lib/blueprint/supabaseAdmin'
 import { canGenerate } from '@/lib/blueprint/entitlements'
 import { reserveBlueprintCredits, releaseBlueprintCredits } from '@/lib/blueprint/credits'
 import { resolveGenerationRunTokenCost } from '@/lib/billing/tokenCosts'
-import {
-  submitWorkflow,
-  waitForJob,
-  downloadAllAssets,
-  type ComfyUIWorkflow,
-} from '@/lib/comfyui'
+import { generate, type ComfyUIWorkflow } from '@/lib/comfyui'
 import { buildWorkflow, defaultVariables } from '@/lib/workflow/builder'
 import type { VariableMap } from '@/lib/workflow/types'
 import { uploadOutputs } from '@/lib/comfyui/storage'
@@ -25,7 +20,8 @@ import {
   resolveRequestedOutputCount,
 } from '@/lib/billing/planLimits'
 
-export const maxDuration = 600 // 10 min for video
+/** Vercel Hobby max is 300s; use queue/worker for long GPU work */
+export const maxDuration = 300
 
 export async function POST(request: Request) {
   const reservedCredits = { runRefId: null as string | null, cost: 0 }
@@ -46,6 +42,8 @@ export async function POST(request: Request) {
       typeof body.influencerId === 'string' ? body.influencerId : ''
     const workflowTemplateId =
       typeof body.workflowTemplateId === 'string' ? body.workflowTemplateId : ''
+    const contentRating =
+      body.content_rating === 'nsfw' ? 'nsfw' as const : 'sfw' as const
     const workflowJson = body.workflowJson as ComfyUIWorkflow | null | undefined
     const variables =
       body.variables && typeof body.variables === 'object'
@@ -181,34 +179,35 @@ export async function POST(request: Request) {
       modelOverrides: Object.keys(modelOverrides).length ? modelOverrides : undefined,
     })
 
-    const { jobId } = await submitWorkflow(workflow)
-
-    const history = await waitForJob(jobId, {
+    const result = await generate(workflow, {
       timeoutMs: runType === 'VIDEO' ? 600_000 : 120_000,
-      onProgress: () => {},
+      onProgress: (status) => console.log(`Generation status: ${status}`),
+      contentRating,
     })
 
-    const assets = await downloadAllAssets(history, jobId)
-    if (assets.size === 0) {
+    if (result.assets.length === 0) {
       return NextResponse.json(
-        { detail: 'ComfyUI run produced no outputs' },
+        { detail: 'Generation produced no outputs' },
         { status: 502 }
       )
     }
 
-    const pathPrefix = `${influencer.org_id}/${influencerId}/${jobId}`.replace(
+    const pathPrefix = `${influencer.org_id}/${influencerId}/${result.jobId}`.replace(
       /\/+/g,
       '/'
     )
-    const toUpload = Array.from(assets.entries()).map(([filename, { buffer, kind }]) => ({
+    const toUpload = result.assets.map(({ filename, buffer, kind }) => ({
       filename,
       buffer,
       kind,
     }))
-    const uploadResults = await uploadOutputs(pathPrefix, toUpload)
+    const uploadResults = await uploadOutputs(pathPrefix, toUpload, {
+      isVault: contentRating === 'nsfw',
+    })
 
     return NextResponse.json({
-      jobId,
+      jobId: result.jobId,
+      backend: result.backend,
       outputs: uploadResults.map((r) => ({
         storagePath: r.storagePath,
         signedUrl: r.signedUrl,

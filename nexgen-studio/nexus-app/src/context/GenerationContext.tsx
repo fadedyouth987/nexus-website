@@ -1,53 +1,14 @@
 'use client'
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import {
+  defaultGenerationSettings,
+  mergeGenerationSettings,
+  type GenerationSettings,
+  type LoRASetting,
+} from '@/modules/video-jobs/generation-settings'
 
-export interface LoRASetting {
-  id: string
-  name: string
-  path: string
-  strength: number
-  enabled: boolean
-}
-
-export interface GenerationSettings {
-  // Model
-  checkpoint: string
-  vae: string
-  
-  // Sampler
-  steps: number
-  cfg: number
-  sampler: string
-  scheduler: string
-  seed: number
-  denoise: number
-  
-  // LoRAs
-  loras: LoRASetting[]
-  
-  // ControlNet
-  controlnetEnabled: boolean
-  controlnetModel: string
-  controlnetPreprocessor: string
-  controlnetStrength: number
-  
-  // Dimensions
-  width: number
-  height: number
-  
-  // Batch
-  batchSize: number
-
-  // Advanced
-  clipSkip: number
-  highresFix: boolean
-  hrScale: number
-  hrSteps: number
-  hrDenoise: number
-  saveToGallery: boolean
-  randomSeedAfterGen: boolean
-}
+export type { GenerationSettings, LoRASetting } from '@/modules/video-jobs/generation-settings'
 
 interface GenerationContextType {
   settings: GenerationSettings
@@ -60,32 +21,6 @@ interface GenerationContextType {
   importSettings: (json: string) => void
 }
 
-const defaultSettings: GenerationSettings = {
-  checkpoint: 'sd15',
-  vae: 'Auto',
-  steps: 20,
-  cfg: 7,
-  sampler: 'euler',
-  scheduler: 'normal',
-  seed: -1,
-  denoise: 1,
-  loras: [],
-  controlnetEnabled: false,
-  controlnetModel: '',
-  controlnetPreprocessor: 'none',
-  controlnetStrength: 1,
-  width: 512,
-  height: 512,
-  batchSize: 1,
-  clipSkip: 1,
-  highresFix: false,
-  hrScale: 2,
-  hrSteps: 20,
-  hrDenoise: 0.3,
-  saveToGallery: true,
-  randomSeedAfterGen: false,
-}
-
 const GenerationContext = createContext<GenerationContextType | undefined>(undefined)
 
 export function GenerationProvider({ children }: { children: ReactNode }) {
@@ -94,13 +29,13 @@ export function GenerationProvider({ children }: { children: ReactNode }) {
       const saved = localStorage.getItem('generationSettings')
       if (saved) {
         try {
-          return { ...defaultSettings, ...JSON.parse(saved) }
+          return mergeGenerationSettings(JSON.parse(saved))
         } catch {
-          return defaultSettings
+          return defaultGenerationSettings
         }
       }
     }
-    return defaultSettings
+    return defaultGenerationSettings
   })
   const [loaded, setLoaded] = useState(false)
 
@@ -144,7 +79,7 @@ export function GenerationProvider({ children }: { children: ReactNode }) {
   }
 
   const resetSettings = () => {
-    setSettings(defaultSettings)
+    setSettings(defaultGenerationSettings)
   }
 
   const exportSettings = () => {
@@ -154,7 +89,7 @@ export function GenerationProvider({ children }: { children: ReactNode }) {
   const importSettings = (json: string) => {
     try {
       const imported = JSON.parse(json)
-      setSettings({ ...defaultSettings, ...imported })
+      setSettings(mergeGenerationSettings(imported))
     } catch (e) {
       console.error('Failed to import settings:', e)
     }

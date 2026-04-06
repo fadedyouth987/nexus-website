@@ -9,6 +9,7 @@ import {
   normalizePlan,
   resolveRequestedOutputCount,
 } from '../billing/planLimits'
+import { isMissingColumnError } from '@/server/supabase/errors'
 
 type CreateJobInput = {
   userId: string
@@ -39,12 +40,7 @@ export async function createBlueprintGenerationJob(input: CreateJobInput) {
     throw error
   }
 
-  const { data: member } = await admin
-    .from('organization_members')
-    .select('id')
-    .eq('user_id', input.userId)
-    .eq('org_id', influencer.org_id)
-    .maybeSingle()
+  const member = await resolveOrganizationMembership(admin, input.userId, influencer.org_id)
 
   if (!member) {
     const error = new Error('Influencer not found')
@@ -178,6 +174,55 @@ export async function createBlueprintGenerationJob(input: CreateJobInput) {
   })
 
   return job
+}
+
+async function resolveOrganizationMembership(
+  admin: ReturnType<typeof getBlueprintSupabaseAdmin>,
+  userId: string,
+  orgId: string
+) {
+  const legacyOrgIdMember = await admin
+    .from('organization_members')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('org_id', orgId)
+    .maybeSingle()
+
+  if (!legacyOrgIdMember.error) {
+    if (legacyOrgIdMember.data) {
+      return legacyOrgIdMember.data
+    }
+  } else if (!isMissingColumnError(legacyOrgIdMember.error)) {
+    throw legacyOrgIdMember.error
+  }
+
+  const legacyOrganizationIdMember = await admin
+    .from('organization_members')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('organization_id', orgId)
+    .maybeSingle()
+
+  if (!legacyOrganizationIdMember.error) {
+    if (legacyOrganizationIdMember.data) {
+      return legacyOrganizationIdMember.data
+    }
+  } else if (!isMissingColumnError(legacyOrganizationIdMember.error)) {
+    throw legacyOrganizationIdMember.error
+  }
+
+  const v2Member = await admin
+    .from('org_members_v2')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('org_id', orgId)
+    .maybeSingle()
+
+  if (v2Member.error) {
+    throw v2Member.error
+  }
+
+  return v2Member.data
 }
 
 export async function getWorkflowTemplateIdBySlug(slug: string) {

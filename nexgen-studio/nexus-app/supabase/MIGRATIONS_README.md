@@ -15,3 +15,20 @@ When running SQL in the Supabase SQL Editor (or via `supabase db push`), use thi
 - **"relation public.models does not exist"** – Run `20260305_models_and_verification.sql` before `20260306_billing_gpu_jobs.sql`.
 - **"relation public.credit_ledger does not exist"** – The billing migration’s functions use `credit_ledger`; that table is created in `0001_blueprint_exec_layer.sql`. Either run 0001 first or ignore the billing migration until your schema includes `credit_ledger`.
 - **"relation public.influencers does not exist"** – The LLM migration only alters `influencers` and creates `engagement_logs` when `influencers` exists; it will no-op if the table is missing.
+
+## March 13 SaaS migration chain
+
+For the durable jobs / accounting / scheduling work, run these in this order:
+
+1. `20260313_saas_foundation.sql`
+2. `20260313_video_job_hardening.sql`
+3. `20260313_video_job_cancellation_and_provider_codes.sql`
+4. `20260313_video_job_kind_support.sql`
+5. `20260313_usage_event_accounting.sql`
+6. `20260313_scheduled_content_automation.sql`
+
+These March 13 migrations are written to be more SQL Editor safe on an existing Supabase project:
+
+- they guard missing tables with `NOTICE` messages instead of hard failing where practical
+- they use `if exists` / `if not exists` patterns heavily
+- they may intentionally skip foreign keys when a referenced table is not present yet

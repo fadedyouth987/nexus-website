@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 const fs = require('node:fs/promises')
 const path = require('node:path')
 const { createClient } = require('@supabase/supabase-js')

@@ -1,11 +1,23 @@
 /**
- * Upload ComfyUI outputs to Supabase Storage and return signed URLs.
+ * Upload ComfyUI outputs to the configured S3-compatible network storage
+ * and return signed URLs for immediate access.
  */
 
-import { getEngineSupabaseAdmin } from '@/lib/engine/supabaseAdmin'
+import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
+import { requireEnv } from '@/lib/blueprint/env'
+import { getBlueprintSupabaseAdmin } from '@/lib/blueprint/supabaseAdmin'
 
-const BUCKET = process.env.COMFYUI_OUTPUT_BUCKET ?? 'comfy-outputs'
 const SIGNED_URL_EXPIRY_SEC = 3600
+const SUPABASE_STANDARD_BUCKET = 'assets'
+
+function hasS3StorageConfig(isVault: boolean) {
+  const requiredNames = isVault
+    ? ['S3_ENDPOINT', 'S3_VAULT_BUCKET', 'S3_VAULT_ACCESS_KEY', 'S3_VAULT_SECRET_KEY']
+    : ['S3_ENDPOINT', 'S3_BUCKET', 'S3_ACCESS_KEY', 'S3_SECRET_KEY']
+
+  return requiredNames.every((name) => Boolean(process.env[name]))
+}
 
 export interface UploadResult {
   storagePath: string
@@ -14,54 +26,108 @@ export interface UploadResult {
   kind: 'image' | 'video'
 }
 
-/**
- * Ensure the bucket exists (call once at startup or ignore if using existing bucket).
- */
-export async function ensureBucket(): Promise<void> {
-  const admin = getEngineSupabaseAdmin()
-  const { data: buckets } = await admin.storage.listBuckets()
-  if (buckets?.some((b: { name: string }) => b.name === BUCKET)) return
-  await admin.storage.createBucket(BUCKET, { public: false })
+function getClient(isVault: boolean) {
+  return new S3Client({
+    endpoint: requireEnv('S3_ENDPOINT'),
+    region: process.env.S3_REGION || 'auto',
+    forcePathStyle: true,
+    credentials: {
+      accessKeyId: requireEnv(isVault ? 'S3_VAULT_ACCESS_KEY' : 'S3_ACCESS_KEY'),
+      secretAccessKey: requireEnv(isVault ? 'S3_VAULT_SECRET_KEY' : 'S3_SECRET_KEY'),
+    },
+  })
+}
+
+function getBucket(isVault: boolean) {
+  return requireEnv(isVault ? 'S3_VAULT_BUCKET' : 'S3_BUCKET')
+}
+
+function getContentType(filename: string, kind: 'image' | 'video') {
+  if (kind === 'video') return 'video/mp4'
+  if (filename.toLowerCase().endsWith('.png')) return 'image/png'
+  if (filename.toLowerCase().endsWith('.webp')) return 'image/webp'
+  return 'image/jpeg'
 }
 
 /**
- * Upload a single buffer to Supabase Storage and return the signed URL.
+ * Buckets are expected to exist already in the network storage.
+ */
+export async function ensureBucket(): Promise<void> {
+  return
+}
+
+/**
+ * Upload a single buffer to network storage and return a signed URL.
  */
 export async function uploadOutput(
   pathPrefix: string,
   filename: string,
   buffer: ArrayBuffer,
-  kind: 'image' | 'video'
+  kind: 'image' | 'video',
+  options?: { isVault?: boolean }
 ): Promise<UploadResult> {
-  const admin = getEngineSupabaseAdmin()
+  const isVault = options?.isVault === true
   const storagePath = `${pathPrefix}/${filename}`.replace(/\/+/g, '/')
-  const contentType =
-    kind === 'video'
-      ? 'video/mp4'
-      : filename.toLowerCase().endsWith('.png')
-        ? 'image/png'
-        : 'image/jpeg'
+  const contentType = getContentType(filename, kind)
 
-  const { error } = await admin.storage.from(BUCKET).upload(storagePath, buffer, {
-    contentType,
-    upsert: true,
-  })
+  if (!hasS3StorageConfig(isVault)) {
+    if (isVault) {
+      throw new Error('Vault storage requires S3 configuration')
+    }
 
-  if (error) {
-    throw new Error(`Supabase upload failed: ${error.message}`)
+    const admin = getBlueprintSupabaseAdmin()
+    const { error } = await admin.storage
+      .from(SUPABASE_STANDARD_BUCKET)
+      .upload(storagePath, Buffer.from(buffer), {
+        contentType,
+        upsert: true,
+      })
+
+    if (error) {
+      throw new Error(`Supabase Storage upload failed: ${error.message}`)
+    }
+
+    const { data, error: signError } = await admin.storage
+      .from(SUPABASE_STANDARD_BUCKET)
+      .createSignedUrl(storagePath, SIGNED_URL_EXPIRY_SEC)
+
+    if (signError || !data?.signedUrl) {
+      throw new Error(signError?.message || 'Failed to sign uploaded asset from Supabase Storage')
+    }
+
+    return {
+      storagePath,
+      signedUrl: data.signedUrl,
+      filename,
+      kind,
+    }
   }
 
-  const { data: signed, error: signError } = await admin.storage
-    .from(BUCKET)
-    .createSignedUrl(storagePath, SIGNED_URL_EXPIRY_SEC)
+  const bucket = getBucket(isVault)
+  const client = getClient(isVault)
 
-  if (signError || !signed?.signedUrl) {
-    throw new Error(signError?.message ?? 'Failed to create signed URL')
+  const uploadInput = {
+    Bucket: bucket,
+    Key: storagePath,
+    Body: Buffer.from(buffer),
+    ContentType: contentType,
   }
+
+  await client.send(new PutObjectCommand(uploadInput))
+
+  const signedUrl = await getSignedUrl(
+    client,
+    new GetObjectCommand({
+      Bucket: bucket,
+      Key: storagePath,
+      ResponseContentType: contentType,
+    }),
+    { expiresIn: SIGNED_URL_EXPIRY_SEC }
+  )
 
   return {
     storagePath,
-    signedUrl: signed.signedUrl,
+    signedUrl,
     filename,
     kind,
   }
@@ -72,7 +138,8 @@ export async function uploadOutput(
  */
 export async function uploadOutputs(
   pathPrefix: string,
-  assets: Array<{ filename: string; buffer: ArrayBuffer; kind: 'image' | 'video' }>
+  assets: Array<{ filename: string; buffer: ArrayBuffer; kind: 'image' | 'video' }>,
+  options?: { isVault?: boolean }
 ): Promise<UploadResult[]> {
   const results: UploadResult[] = []
   for (const asset of assets) {
@@ -80,7 +147,8 @@ export async function uploadOutputs(
       pathPrefix,
       asset.filename,
       asset.buffer,
-      asset.kind
+      asset.kind,
+      options
     )
     results.push(result)
   }

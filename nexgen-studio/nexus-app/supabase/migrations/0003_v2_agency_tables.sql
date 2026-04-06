@@ -74,18 +74,42 @@ create table if not exists public.content_v2 (
   updated_at timestamptz not null default now()
 );
 
-create table if not exists public.schedules_v2 (
-  id uuid primary key default gen_random_uuid(),
-  org_id uuid not null references public.organizations(id) on delete cascade,
-  workspace_id uuid not null references public.workspaces_v2(id) on delete cascade,
-  content_id uuid not null references public.content_v2(id) on delete cascade,
-  platform text null,
-  scheduled_for timestamptz null,
-  status text not null check (status in ('queued', 'scheduled', 'published', 'failed', 'canceled')),
-  error jsonb not null default '{}'::jsonb,
-  legacy_post_id uuid null references public.posts(id) on delete set null,
-  created_at timestamptz not null default now()
-);
+do $$
+begin
+  if to_regclass('public.posts') is not null then
+    execute $sql$
+      create table if not exists public.schedules_v2 (
+        id uuid primary key default gen_random_uuid(),
+        org_id uuid not null references public.organizations(id) on delete cascade,
+        workspace_id uuid not null references public.workspaces_v2(id) on delete cascade,
+        content_id uuid not null references public.content_v2(id) on delete cascade,
+        platform text null,
+        scheduled_for timestamptz null,
+        status text not null check (status in ('queued', 'scheduled', 'published', 'failed', 'canceled')),
+        error jsonb not null default '{}'::jsonb,
+        legacy_post_id uuid null references public.posts(id) on delete set null,
+        created_at timestamptz not null default now()
+      )
+    $sql$;
+  else
+    raise notice 'Creating schedules_v2 without legacy_post_id FK because public.posts does not exist yet.';
+    execute $sql$
+      create table if not exists public.schedules_v2 (
+        id uuid primary key default gen_random_uuid(),
+        org_id uuid not null references public.organizations(id) on delete cascade,
+        workspace_id uuid not null references public.workspaces_v2(id) on delete cascade,
+        content_id uuid not null references public.content_v2(id) on delete cascade,
+        platform text null,
+        scheduled_for timestamptz null,
+        status text not null check (status in ('queued', 'scheduled', 'published', 'failed', 'canceled')),
+        error jsonb not null default '{}'::jsonb,
+        legacy_post_id uuid null,
+        created_at timestamptz not null default now()
+      )
+    $sql$;
+  end if;
+end
+$$;
 
 create table if not exists public.performance_v2 (
   id uuid primary key default gen_random_uuid(),
@@ -127,10 +151,17 @@ alter table public.content_v2
   add column if not exists created_at timestamptz not null default now(),
   add column if not exists updated_at timestamptz not null default now();
 
-alter table public.schedules_v2
-  add column if not exists error jsonb not null default '{}'::jsonb,
-  add column if not exists legacy_post_id uuid null references public.posts(id) on delete set null,
-  add column if not exists created_at timestamptz not null default now();
+do $$
+begin
+  execute 'alter table public.schedules_v2 add column if not exists error jsonb not null default ''{}''::jsonb';
+  if to_regclass('public.posts') is not null then
+    execute 'alter table public.schedules_v2 add column if not exists legacy_post_id uuid null references public.posts(id) on delete set null';
+  else
+    execute 'alter table public.schedules_v2 add column if not exists legacy_post_id uuid null';
+  end if;
+  execute 'alter table public.schedules_v2 add column if not exists created_at timestamptz not null default now()';
+end
+$$;
 
 alter table public.performance_v2
   add column if not exists platform text null,

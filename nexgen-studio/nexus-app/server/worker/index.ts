@@ -6,8 +6,11 @@ import { processGeneration } from './processors/processGeneration'
 import { processSafeImageV2Job } from './processors/processSafeImageV2'
 import { publishDueSchedules } from './processors/publishScheduledContent'
 import { ingestPerformanceSnapshots } from './processors/ingestPerformance'
+import { processVideoJob } from './processors/processVideoJob'
 import { comfyuiWarnIfUnreachable } from '../../src/lib/server/comfyui'
 import { startEngineWorkers } from './engines/engineQueue'
+import { processDueScheduledContentRuns } from '../../src/modules/scheduling'
+import { toBullMqQueueName } from '../../src/server/providers/queue/queueName'
 
 function concurrency(name: string, fallback: number) {
   const value = Number(process.env[name] || fallback)
@@ -19,10 +22,11 @@ import { logger } from './core/logger'
 function startWorker(queueName: string, conc: number) {
   const connection = getWorkerRedis()
   const worker = new Worker(
-    queueName,
+    toBullMqQueueName(queueName),
     async (job: any) => {
       const payload = job.data as
         | {
+            id?: string
             jobId?: string
             kind?: string
             org_id?: string
@@ -45,6 +49,16 @@ function startWorker(queueName: string, conc: number) {
           requested_at: typeof payload.requested_at === 'string' ? payload.requested_at : undefined,
           requested_by: typeof payload.requested_by === 'string' ? payload.requested_by : null,
         })
+        return
+      }
+
+      if (queueName === 'video:jobs') {
+        const videoJobId = typeof payload?.id === 'string' ? payload.id : ''
+        if (!videoJobId) {
+          throw new Error('Unsupported queue payload for video:jobs')
+        }
+        logger.info('Processing video job', { videoJobId })
+        await processVideoJob(videoJobId)
         return
       }
 
@@ -105,6 +119,7 @@ function startIntervalJob(name: string, intervalMs: number, job: () => Promise<{
 }
 
 const workers = [
+  startWorker('video:jobs', concurrency('CONC_VIDEO_JOBS', 1)),
   startWorker('generation:safe:image', concurrency('CONC_SAFE_IMAGE', 1)),
   startWorker('generation:safe:video', concurrency('CONC_SAFE_VIDEO', 1)),
   startWorker('generation:vault:image', concurrency('CONC_VAULT_IMAGE', 1)),
@@ -114,12 +129,19 @@ const workers = [
 
 let stopPublisher = () => {}
 let stopPerformanceIngestion = () => {}
+let stopScheduledContentRuns = () => {}
 
 if (hasWorkerAdminConfig()) {
   stopPublisher = startIntervalJob(
     'schedule-publisher',
     everyMs('SCHEDULE_PUBLISH_INTERVAL_MS', 15_000),
     () => publishDueSchedules(25)
+  )
+
+  stopScheduledContentRuns = startIntervalJob(
+    'scheduled-content-runs',
+    everyMs('SCHEDULED_CONTENT_RUN_INTERVAL_MS', 60_000),
+    () => processDueScheduledContentRuns(10)
   )
 
   stopPerformanceIngestion = startIntervalJob(
@@ -136,6 +158,7 @@ if (hasWorkerAdminConfig()) {
 process.on('SIGINT', async () => {
   stopPublisher()
   stopPerformanceIngestion()
+  stopScheduledContentRuns()
   await Promise.all(workers.map((worker) => worker.close()))
   process.exit(0)
 })
