@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 
-export default function AutomationPlannerPage() {
+/** Canonical planner is at /planner; redirect nested automation/planner paths */
+export default function AutomationPlannerRedirectPage() {
   redirect('/planner')
 }

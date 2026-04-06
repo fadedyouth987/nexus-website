@@ -18,30 +18,8 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { CommandPalette } from '@/components/generation/studio/CommandPalette'
 import { SITE_NAME } from '@/lib/sitemap'
+import { NAV_TITLE_OVERRIDES } from '@/lib/navigation'
 import { WorkflowStepper } from './WorkflowStepper'
-
-const navTitles: Array<{ prefix: string; title: string }> = [
-  { prefix: '/dashboard', title: 'Dashboard' },
-  { prefix: '/projects', title: 'Projects' },
-  { prefix: '/brand-kits', title: 'Brand Kits' },
-  { prefix: '/campaigns', title: 'Campaigns' },
-  { prefix: '/schedules', title: 'Schedules' },
-  { prefix: '/video-jobs', title: 'Generation Jobs' },
-  { prefix: '/assets', title: 'Assets' },
-  { prefix: '/analytics', title: 'Analytics' },
-  { prefix: '/agency', title: 'Agency' },
-  { prefix: '/billing', title: 'Billing' },
-  { prefix: '/settings/verification', title: 'Age & NSFW' },
-  { prefix: '/settings/billing', title: 'Billing' },
-  { prefix: '/settings/team', title: 'Team' },
-  { prefix: '/settings/organization', title: 'Organization' },
-  { prefix: '/settings', title: 'Settings' },
-  { prefix: '/learn', title: 'Documentation' },
-  { prefix: '/contact', title: 'Support' },
-  { prefix: '/audit-logs', title: 'Audit Logs' },
-  { prefix: '/models', title: 'Models' },
-  { prefix: '/organizations', title: 'Organizations' },
-]
 
 export function TopBar() {
   const { data: session } = useSession()
@@ -50,7 +28,9 @@ export function TopBar() {
   const { setTheme } = useTheme()
 
   const title = useMemo(() => {
-    const matched = navTitles.find((item) => pathname === item.prefix || pathname.startsWith(item.prefix + '/'))
+    // Sort by length descending for longest-prefix match
+    const sorted = [...NAV_TITLE_OVERRIDES].sort((a, b) => b.prefix.length - a.prefix.length)
+    const matched = sorted.find((item) => pathname === item.prefix || pathname.startsWith(item.prefix + '/'))
     return matched?.title || 'Workspace'
   }, [pathname])
 

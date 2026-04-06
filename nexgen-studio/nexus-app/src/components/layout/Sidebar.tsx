@@ -2,55 +2,13 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import {
-  BarChart3,
-  Building,
-  BriefcaseBusiness,
-  CalendarClock,
-  ChevronLeft,
-  ChevronRight,
-  CreditCard,
-  FolderKanban,
-  LayoutDashboard,
-  LifeBuoy,
-  Palette,
-  Settings,
-  Clapperboard,
-  Image,
-  type LucideIcon,
-} from 'lucide-react'
+import { ChevronLeft, ChevronRight, LayoutDashboard } from 'lucide-react'
 import { cn } from '@/lib/core/utils'
 import { Button } from '@/components/ui/button'
+import { APP_NAVIGATION, type NavItem } from '@/lib/navigation'
 
-type NavItem = {
-  href: string
-  label: string
-  icon: LucideIcon
-}
-
-const homeNavItems: NavItem[] = [
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-]
-
-const workflowNavItems: NavItem[] = [
-  { href: '/projects', label: 'Projects', icon: FolderKanban },
-  { href: '/brand-kits', label: 'Brand Kits', icon: Palette },
-  { href: '/campaigns', label: 'Campaigns', icon: BriefcaseBusiness },
-  { href: '/schedules', label: 'Schedules', icon: CalendarClock },
-  { href: '/video-jobs', label: 'Generation Jobs', icon: Clapperboard },
-  { href: '/assets', label: 'Assets', icon: Image },
-]
-
-const insightNavItems: NavItem[] = [
-  { href: '/analytics', label: 'Analytics', icon: BarChart3 },
-  { href: '/agency', label: 'Agency', icon: Building },
-]
-
-const systemNavItems: NavItem[] = [
-  { href: '/billing', label: 'Billing', icon: CreditCard },
-  { href: '/settings', label: 'Settings', icon: Settings },
-  { href: '/contact', label: 'Support', icon: LifeBuoy },
-]
+// Re-export for compatibility
+export type { NavItem }
 
 type SidebarProps = {
   isCollapsed?: boolean
@@ -72,6 +30,7 @@ function navLink(item: NavItem, pathname: string, isCollapsed: boolean) {
           ? 'border-primary/30 bg-primary/12 text-primary shadow-[0_14px_30px_-20px_rgba(55,120,255,0.5)]'
           : 'border-transparent text-muted-foreground hover:border-border/70 hover:bg-background/75 hover:text-foreground'
       )}
+      title={item.description}
     >
       <Icon
         className={cn(
@@ -79,45 +38,59 @@ function navLink(item: NavItem, pathname: string, isCollapsed: boolean) {
           isActive ? 'text-primary' : 'text-muted-foreground'
         )}
       />
-      {!isCollapsed ? <span className="truncate font-medium tracking-tight">{item.label}</span> : null}
+      {!isCollapsed ? (
+        <span className="flex flex-1 items-center gap-2 truncate font-medium tracking-tight">
+          {item.label}
+          {item.badge ? (
+            <span className="rounded-full bg-primary/15 px-1.5 py-0.5 text-[9px] font-bold text-primary">
+              {item.badge}
+            </span>
+          ) : null}
+        </span>
+      ) : null}
     </Link>
   )
 }
 
 function NavGroup({
-  title,
-  items,
+  section,
   pathname,
   isCollapsed,
-  phase,
 }: {
-  title: string
-  items: NavItem[]
+  section: (typeof APP_NAVIGATION)[number]
   pathname: string
   isCollapsed: boolean
-  phase?: number
 }) {
+  // Skip empty sections
+  if (section.items.length === 0) return null
+
   return (
     <div className="space-y-1.5">
       {!isCollapsed ? (
         <div className="flex items-center gap-2 px-3 pb-2">
-          {phase != null && (
+          {section.phase != null && (
             <span className="flex h-4 w-4 items-center justify-center rounded-full bg-primary/15 text-[9px] font-bold text-primary">
-              {phase}
+              {section.phase}
             </span>
           )}
           <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground/60">
-            {title}
+            {section.label}
           </span>
         </div>
       ) : null}
-      {items.map((item) => navLink(item, pathname, isCollapsed))}
+      {section.items.map((item) => navLink(item, pathname, isCollapsed))}
     </div>
   )
 }
 
 export function Sidebar({ isCollapsed = false, toggleSidebar }: SidebarProps) {
   const pathname = usePathname()
+
+  // Primary nav sections (always visible)
+  const primarySections = APP_NAVIGATION.filter((s) => s.id !== 'system')
+
+  // System section (at bottom)
+  const systemSection = APP_NAVIGATION.find((s) => s.id === 'system')
 
   return (
     <aside
@@ -148,12 +121,15 @@ export function Sidebar({ isCollapsed = false, toggleSidebar }: SidebarProps) {
       </div>
 
       <nav className="flex flex-1 flex-col gap-5 overflow-y-auto px-1 py-2 custom-scrollbar" suppressHydrationWarning>
-        <NavGroup title="Home" items={homeNavItems} pathname={pathname} isCollapsed={isCollapsed} />
-        <NavGroup title="Workflow" items={workflowNavItems} pathname={pathname} isCollapsed={isCollapsed} phase={1} />
-        <NavGroup title="Insights" items={insightNavItems} pathname={pathname} isCollapsed={isCollapsed} phase={2} />
-        <div className="mt-auto border-t border-border/60 pt-5">
-          <NavGroup title="System" items={systemNavItems} pathname={pathname} isCollapsed={isCollapsed} />
-        </div>
+        {primarySections.map((section) => (
+          <NavGroup key={section.id} section={section} pathname={pathname} isCollapsed={isCollapsed} />
+        ))}
+
+        {systemSection ? (
+          <div className="mt-auto border-t border-border/60 pt-5">
+            <NavGroup section={systemSection} pathname={pathname} isCollapsed={isCollapsed} />
+          </div>
+        ) : null}
       </nav>
     </aside>
   )

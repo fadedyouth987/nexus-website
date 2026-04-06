@@ -3,19 +3,51 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/core/utils'
+import { APP_NAVIGATION, WORKFLOW_PHASES, type NavItem } from '@/lib/navigation'
 
-const PHASES = [
-  { id: 1, label: 'Create', href: '/creators', prefixes: ['/creators', '/templates'] },
-  { id: 2, label: 'Generate', href: '/studio', prefixes: ['/studio', '/edit', '/design'] },
-  { id: 3, label: 'Content', href: '/gallery', prefixes: ['/gallery', '/vault', '/production'] },
-  { id: 4, label: 'Automate', href: '/automation', prefixes: ['/automation', '/planner'] },
-  { id: 5, label: 'Publish', href: '/calendar', prefixes: ['/calendar', '/socials', '/inbox'] },
-  { id: 6, label: 'Grow', href: '/analytics', prefixes: ['/analytics', '/monetization', '/agency'] },
-] as const
+// Build phase prefixes dynamically from navigation structure
+function getPhasePrefixes(phaseNumber: number): string[] {
+  const prefixes: string[] = []
+
+  // Find all nav items belonging to this phase
+  APP_NAVIGATION.forEach((section) => {
+    const sectionPhase = section.phase
+    section.items.forEach((item) => {
+      const itemPhase = item.phase ?? sectionPhase
+      if (itemPhase === phaseNumber) {
+        prefixes.push(item.href)
+      }
+    })
+  })
+
+  // Add legacy/alias paths
+  const phase = WORKFLOW_PHASES.find((p) => p.id === phaseNumber)
+  if (phaseNumber === 1) {
+    prefixes.push('/templates', '/brand-kits', '/influencers')
+  }
+  if (phaseNumber === 2) {
+    prefixes.push('/edit', '/design', '/video-jobs', '/production')
+  }
+  if (phaseNumber === 3) {
+    prefixes.push('/assets')
+  }
+  if (phaseNumber === 4) {
+    prefixes.push('/planner', '/projects', '/campaigns', '/schedules')
+  }
+  if (phaseNumber === 5) {
+    prefixes.push('/social', '/posts')
+  }
+  if (phaseNumber === 6) {
+    prefixes.push('/organizations')
+  }
+
+  return [...new Set(prefixes)].sort((a, b) => b.length - a.length)
+}
 
 function getActivePhase(pathname: string): number | null {
-  for (const phase of PHASES) {
-    if (phase.prefixes.some((p) => pathname === p || pathname.startsWith(p + '/'))) {
+  for (const phase of WORKFLOW_PHASES) {
+    const prefixes = getPhasePrefixes(phase.id)
+    if (prefixes.some((p) => pathname === p || pathname.startsWith(p + '/'))) {
       return phase.id
     }
   }
@@ -28,7 +60,7 @@ export function WorkflowStepper() {
 
   return (
     <div className="flex items-center gap-1">
-      {PHASES.map((phase, idx) => {
+      {WORKFLOW_PHASES.map((phase, idx) => {
         const isActive = phase.id === activePhase
         const isPast = activePhase != null && phase.id < activePhase
         return (
