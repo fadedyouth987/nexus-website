@@ -55,17 +55,17 @@ export function LandingWaitlistSection() {
   }
 
   return (
-    <section id="waitlist" className="border-t border-border py-16 scroll-mt-20">
-      <div className="app-page-shell grid gap-8 lg:grid-cols-2 lg:items-start">
-        <div className="app-section-copy space-y-4">
-          <div>
-            <div className={cn('app-section-kicker', 'landing-lux-kicker')}>Early access</div>
+    <section id="waitlist" className="border-t border-border py-16 scroll-mt-20" suppressHydrationWarning>
+      <div className="app-page-shell grid gap-8 lg:grid-cols-2 lg:items-start" suppressHydrationWarning>
+        <div className="app-section-copy space-y-4" suppressHydrationWarning>
+          <div suppressHydrationWarning>
+            <div className={cn('app-section-kicker', 'landing-lux-kicker')} suppressHydrationWarning>Early access</div>
             <h2 className="app-section-title text-2xl">Join the beta waitlist</h2>
           </div>
           <p className="app-section-description">
             Get early access, share your content goals, and help shape onboarding and 30-day planning.
           </p>
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap gap-3" suppressHydrationWarning>
             <Button asChild variant="outline">
               <Link href="/onboarding">Try onboarding</Link>
             </Button>

@@ -31,22 +31,22 @@ const VALUE_PROPS = [
 /** Server Component: static marketing HTML avoids full-tree hydration (and extension-injected attrs like `bis_skin_checked`). */
 export default function LandingPage() {
   return (
-    <div className="landing-lux-root min-h-screen bg-background text-foreground">
-      <div className="landing-lux-backdrop" aria-hidden>
-        <div className="landing-lux-orb landing-lux-orb-1" />
-        <div className="landing-lux-orb landing-lux-orb-2" />
-        <div className="landing-lux-orb landing-lux-orb-3" />
-        <div className="landing-lux-grid" />
+    <div className="landing-lux-root min-h-screen bg-background text-foreground" suppressHydrationWarning>
+      <div className="landing-lux-backdrop" aria-hidden suppressHydrationWarning>
+        <div className="landing-lux-orb landing-lux-orb-1" suppressHydrationWarning />
+        <div className="landing-lux-orb landing-lux-orb-2" suppressHydrationWarning />
+        <div className="landing-lux-orb landing-lux-orb-3" suppressHydrationWarning />
+        <div className="landing-lux-grid" suppressHydrationWarning />
       </div>
 
-      <div className="landing-lux-content">
-        <section className="overflow-hidden py-20 sm:py-24">
-          <div className="app-page-shell grid gap-10 lg:grid-cols-[minmax(0,1.05fr)_minmax(520px,0.95fr)] lg:items-center">
-            <div className="space-y-7">
-              <div className={cn('app-section-kicker', 'landing-lux-kicker')}>
+      <div className="landing-lux-content" suppressHydrationWarning>
+        <section className="overflow-hidden py-20 sm:py-24" suppressHydrationWarning>
+          <div className="app-page-shell grid gap-10 lg:grid-cols-[minmax(0,1.05fr)_minmax(520px,0.95fr)] lg:items-center" suppressHydrationWarning>
+            <div className="space-y-7" suppressHydrationWarning>
+              <div className={cn('app-section-kicker', 'landing-lux-kicker')} suppressHydrationWarning>
                 Beta launch system for AI creators
               </div>
-              <div className="app-section-copy space-y-4">
+              <div className="app-section-copy space-y-4" suppressHydrationWarning>
                 <h1
                   className={cn(
                     'app-section-title max-w-4xl text-4xl sm:text-5xl md:text-6xl',
@@ -63,7 +63,7 @@ export default function LandingPage() {
                   monetization, and agency workflows. Not just images, a brand that runs.
                 </p>
               </div>
-              <div className="flex flex-wrap gap-3">
+              <div className="flex flex-wrap gap-3" suppressHydrationWarning>
                 <Button
                   asChild
                   size="lg"
@@ -85,24 +85,24 @@ export default function LandingPage() {
                   <Link href="/auth">Sign in</Link>
                 </Button>
               </div>
-              <div className="app-stat-grid max-w-2xl">
-                <div className={cn('app-surface-card landing-lux-stat p-4')}>
-                  <div className="text-2xl font-semibold tabular-nums">24/7</div>
-                  <div className="mt-1 text-sm text-muted-foreground">Always-on content engine</div>
+              <div className="app-stat-grid max-w-2xl" suppressHydrationWarning>
+                <div className={cn('app-surface-card landing-lux-stat p-4')} suppressHydrationWarning>
+                  <div className="text-2xl font-semibold tabular-nums" suppressHydrationWarning>24/7</div>
+                  <div className="mt-1 text-sm text-muted-foreground" suppressHydrationWarning>Always-on content engine</div>
                 </div>
-                <div className={cn('app-surface-card landing-lux-stat p-4')}>
-                  <div className="text-2xl font-semibold tabular-nums">3x</div>
-                  <div className="mt-1 text-sm text-muted-foreground">Faster launch to first funnel</div>
+                <div className={cn('app-surface-card landing-lux-stat p-4')} suppressHydrationWarning>
+                  <div className="text-2xl font-semibold tabular-nums" suppressHydrationWarning>3x</div>
+                  <div className="mt-1 text-sm text-muted-foreground" suppressHydrationWarning>Faster launch to first funnel</div>
                 </div>
-                <div className={cn('app-surface-card landing-lux-stat p-4')}>
-                  <div className="text-2xl font-semibold tabular-nums">1 OS</div>
-                  <div className="mt-1 text-sm text-muted-foreground">Studio, scheduler, and analytics</div>
+                <div className={cn('app-surface-card landing-lux-stat p-4')} suppressHydrationWarning>
+                  <div className="text-2xl font-semibold tabular-nums" suppressHydrationWarning>1 OS</div>
+                  <div className="mt-1 text-sm text-muted-foreground" suppressHydrationWarning>Studio, scheduler, and analytics</div>
                 </div>
               </div>
             </div>
 
-            <div className="relative">
-              <div className="landing-lux-hero-panel p-3">
+            <div className="relative" suppressHydrationWarning>
+              <div className="landing-lux-hero-panel p-3" suppressHydrationWarning>
                 <Image
                   src="/landing/hero-showcase.svg"
                   alt="Nexus Studio hero artwork showing creator, automation, and growth surfaces"
@@ -117,21 +117,21 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section className="border-t border-border bg-muted/20 py-16">
-          <div className="app-page-shell space-y-10">
-            <div className="app-section-header text-center">
-              <div className="app-section-copy">
-                <div className={cn('app-section-kicker', 'landing-lux-kicker')}>Core product motion</div>
+        <section className="border-t border-border bg-muted/20 py-16" suppressHydrationWarning>
+          <div className="app-page-shell space-y-10" suppressHydrationWarning>
+            <div className="app-section-header text-center" suppressHydrationWarning>
+              <div className="app-section-copy" suppressHydrationWarning>
+                <div className={cn('app-section-kicker', 'landing-lux-kicker')} suppressHydrationWarning>Core product motion</div>
                 <h2 className="app-section-title text-2xl">One platform. Three jobs.</h2>
               </div>
               <p className="app-section-description mx-auto max-w-2xl">
                 Purpose-built visuals now map to the core motions in the product.
               </p>
             </div>
-            <div className="grid gap-6 md:grid-cols-3">
+            <div className="grid gap-6 md:grid-cols-3" suppressHydrationWarning>
               {VALUE_PROPS.map((prop) => (
                 <Card key={prop.title} className={cn('app-feature-card landing-lux-card overflow-hidden')}>
-                  <div className="border-b border-border bg-background/60 p-3">
+                  <div className="border-b border-border bg-background/60 p-3" suppressHydrationWarning>
                     <Image
                       src={prop.image}
                       alt={prop.alt}
@@ -151,29 +151,29 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section className="border-t border-border py-16">
-          <div className="app-page-shell grid gap-8 lg:grid-cols-[minmax(0,0.72fr)_minmax(0,1fr)] lg:items-center">
-            <div className="app-section-copy space-y-5">
-              <div>
-                <div className={cn('app-section-kicker', 'landing-lux-kicker')}>Product preview</div>
+        <section className="border-t border-border py-16" suppressHydrationWarning>
+          <div className="app-page-shell grid gap-8 lg:grid-cols-[minmax(0,0.72fr)_minmax(0,1fr)] lg:items-center" suppressHydrationWarning>
+            <div className="app-section-copy space-y-5" suppressHydrationWarning>
+              <div suppressHydrationWarning>
+                <div className={cn('app-section-kicker', 'landing-lux-kicker')} suppressHydrationWarning>Product preview</div>
                 <h2 className="app-section-title text-2xl">See it in action</h2>
               </div>
               <p className="app-section-description">
                 A looping motion asset now demonstrates the Studio, identity lock, scheduler, and engagement
                 surfaces without needing a live product walkthrough.
               </p>
-              <div className="space-y-3 text-sm text-muted-foreground">
-                <div className={cn('app-surface-card landing-lux-stat p-4')}>Prompt to image generation</div>
-                <div className={cn('app-surface-card landing-lux-stat p-4')}>
+              <div className="space-y-3 text-sm text-muted-foreground" suppressHydrationWarning>
+                <div className={cn('app-surface-card landing-lux-stat p-4')} suppressHydrationWarning>Prompt to image generation</div>
+                <div className={cn('app-surface-card landing-lux-stat p-4')} suppressHydrationWarning>
                   Identity continuity across content
                 </div>
-                <div className={cn('app-surface-card landing-lux-stat p-4')}>
+                <div className={cn('app-surface-card landing-lux-stat p-4')} suppressHydrationWarning>
                   Automated publishing and reporting
                 </div>
               </div>
             </div>
 
-            <div className="landing-lux-hero-panel p-4">
+            <div className="landing-lux-hero-panel p-4" suppressHydrationWarning>
               <Image
                 src="/landing/studio-demo.svg"
                 alt="Animated demo reel showing the Nexus Studio workflow"
@@ -186,25 +186,25 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section className="border-t border-border bg-muted/20 py-12">
-          <div className="app-page-shell text-center">
+        <section className="border-t border-border bg-muted/20 py-12" suppressHydrationWarning>
+          <div className="app-page-shell text-center" suppressHydrationWarning>
             <h2 className="text-xl font-semibold tracking-tight">Built for creators who scale</h2>
             <p className="mx-auto mt-3 max-w-xl text-sm text-muted-foreground">
               From solo influencers to multi-creator agencies, NexGen Studio provides the complete operating
               system for AI-driven content creation, scheduling, and monetization.
             </p>
-            <div className="mt-6 flex flex-wrap items-center justify-center gap-8 text-muted-foreground sm:gap-12">
-              <div className={cn('landing-lux-stat rounded-xl border border-border/60 bg-background/50 px-6 py-4')}>
-                <div className="text-2xl font-bold tabular-nums text-foreground">12+</div>
-                <div className="text-xs">Platforms supported</div>
+            <div className="mt-6 flex flex-wrap items-center justify-center gap-8 text-muted-foreground sm:gap-12" suppressHydrationWarning>
+              <div className={cn('landing-lux-stat rounded-xl border border-border/60 bg-background/50 px-6 py-4')} suppressHydrationWarning>
+                <div className="text-2xl font-bold tabular-nums text-foreground" suppressHydrationWarning>12+</div>
+                <div className="text-xs" suppressHydrationWarning>Platforms supported</div>
               </div>
-              <div className={cn('landing-lux-stat rounded-xl border border-border/60 bg-background/50 px-6 py-4')}>
-                <div className="text-2xl font-bold tabular-nums text-foreground">24/7</div>
-                <div className="text-xs">Content automation</div>
+              <div className={cn('landing-lux-stat rounded-xl border border-border/60 bg-background/50 px-6 py-4')} suppressHydrationWarning>
+                <div className="text-2xl font-bold tabular-nums text-foreground" suppressHydrationWarning>24/7</div>
+                <div className="text-xs" suppressHydrationWarning>Content automation</div>
               </div>
-              <div className={cn('landing-lux-stat rounded-xl border border-border/60 bg-background/50 px-6 py-4')}>
-                <div className="text-2xl font-bold tabular-nums text-foreground">GPU</div>
-                <div className="text-xs">Accelerated generation</div>
+              <div className={cn('landing-lux-stat rounded-xl border border-border/60 bg-background/50 px-6 py-4')} suppressHydrationWarning>
+                <div className="text-2xl font-bold tabular-nums text-foreground" suppressHydrationWarning>GPU</div>
+                <div className="text-xs" suppressHydrationWarning>Accelerated generation</div>
               </div>
             </div>
           </div>
@@ -212,8 +212,8 @@ export default function LandingPage() {
 
         <LandingWaitlistSection />
 
-        <section className="border-t border-border py-16">
-          <div className="app-page-shell max-w-2xl space-y-5 text-center">
+        <section className="border-t border-border py-16" suppressHydrationWarning>
+          <div className="app-page-shell max-w-2xl space-y-5 text-center" suppressHydrationWarning>
             <h2 className="text-2xl font-semibold tracking-tight">Ready for early access?</h2>
             <Button
               asChild
