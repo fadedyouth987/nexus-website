@@ -2,10 +2,17 @@ export type QueueJobPayload = {
   type: string
   id: string
   metadata?: Record<string, unknown>
+  jobId?: string
+  delay?: number
 }
 
 export interface QueueProvider {
   enqueue(queueName: string, payload: QueueJobPayload): Promise<void>
+  /**
+   * Get the current depth (waiting count) of a queue
+   * Returns 0 if queue doesn't exist or on error
+   */
+  depth(queueName: string): Promise<number>
 }
 
 export interface StorageProvider {

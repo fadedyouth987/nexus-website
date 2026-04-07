@@ -1,18 +1,24 @@
+/**
+ * Blueprint Read Model - DEPRECATED LEGACY PATHS REMOVED
+ *
+ * This module now ONLY uses the exec (generation_jobs) tables as source of truth.
+ * Legacy table access has been removed in v1.5+.
+ *
+ * For apps still on legacy data, enable BLUEPRINT_MIRROR_LEGACY=1 to keep
+ * generation_jobs mirrored to legacy tables for read compatibility.
+ *
+ * MIGRATION PATH:
+ * 1. Ensure BLUEPRINT_MIRROR_LEGACY=1 is enabled
+ * 2. Verify data integrity in generation_jobs
+ * 3. Update downstream consumers to read from generation_jobs
+ * 4. Disable mirroring when ready
+ */
+
 import { getBlueprintReadModel as readModelFromEnv } from './env'
 
 export { getBlueprintReadModel } from './env'
 
-function mapLegacyAsset(asset: any) {
-  return {
-    ...asset,
-    type: typeof asset.type === 'string' ? asset.type.toUpperCase() : 'IMAGE',
-    sfw_status: asset.sfw_status || 'SAFE',
-    thumbnail_path: asset.thumbnail_path || asset.url || asset.storage_path || '',
-    storage_path: asset.storage_path || asset.url || asset.thumbnail_path || '',
-    meta: asset.meta || {},
-  }
-}
-
+// EXEC MODE ASSET MAPPING (source of truth)
 function mapExecAsset(asset: any) {
   return {
     id: asset.id,
@@ -27,6 +33,7 @@ function mapExecAsset(asset: any) {
   }
 }
 
+// EXEC MODE JOB MAPPING (source of truth)
 function mapExecJob(job: any, asset?: any) {
   return {
     id: job.id,
@@ -41,7 +48,9 @@ function mapExecJob(job: any, asset?: any) {
             ? 'completed'
             : job.status === 'FAILED'
               ? 'failed'
-              : String(job.status || '').toLowerCase(),
+              : job.status === 'CANCELED'
+                ? 'failed'
+                : String(job.status || '').toLowerCase(),
     error_message: job.error || null,
     created_at: job.created_at,
     updated_at: job.updated_at,
@@ -60,6 +69,10 @@ function mapVisibilityToLegacyFilter(visibility: 'STANDARD' | 'VAULT') {
   return visibility === 'VAULT' ? ['EXPLICIT'] : ['SAFE', 'SUGGESTIVE']
 }
 
+/**
+ * List assets for gallery/vault tabs
+ * Reads from generated_assets (exec mode - source of truth)
+ */
 export async function listAssetsForTab(opts: {
   supabase: any
   userId: string
@@ -67,24 +80,7 @@ export async function listAssetsForTab(opts: {
   influencerId?: string
   visibility: 'STANDARD' | 'VAULT'
 }) {
-  const mode = readModelFromEnv()
-  if (mode === 'legacy') {
-    let query = opts.supabase
-      .from('assets')
-      .select('*')
-      .eq('org_id', opts.orgId)
-      .in('sfw_status', mapVisibilityToLegacyFilter(opts.visibility))
-      .order('created_at', { ascending: false })
-
-    if (opts.influencerId) {
-      query = query.eq('influencer_id', opts.influencerId)
-    }
-
-    const { data, error } = await query
-    if (error) throw new Error(error.message)
-    return (data ?? []).map(mapLegacyAsset)
-  }
-
+  // EXEC MODE ONLY - legacy path removed in v1.5
   let query = opts.supabase
     .from('generated_assets')
     .select('*')
@@ -101,22 +97,11 @@ export async function listAssetsForTab(opts: {
   return (data ?? []).map(mapExecAsset)
 }
 
+/**
+ * Get single job by ID
+ * Reads from generation_jobs (exec mode - source of truth)
+ */
 export async function getJob(opts: { supabase: any; userId: string; jobId: string }) {
-  const mode = readModelFromEnv()
-  if (mode === 'legacy') {
-    const { data, error } = await opts.supabase
-      .from('generations')
-      .select(
-        'id, creator_id, user_id, prompt, negative_prompt, model, status, error_message, parameters, created_at, updated_at'
-      )
-      .eq('id', opts.jobId)
-      .eq('user_id', opts.userId)
-      .maybeSingle()
-
-    if (error) throw new Error(error.message)
-    return data
-  }
-
   const { data: job, error } = await opts.supabase
     .from('generation_jobs')
     .select('*')
@@ -136,18 +121,11 @@ export async function getJob(opts: { supabase: any; userId: string; jobId: strin
   return mapExecJob(job, assets?.[0])
 }
 
+/**
+ * List jobs for user
+ * Reads from generation_jobs (exec mode - source of truth)
+ */
 export async function listJobs(opts: { supabase: any; userId: string }) {
-  const mode = readModelFromEnv()
-  if (mode === 'legacy') {
-    const { data, error } = await opts.supabase
-      .from('generations')
-      .select('id, creator_id, prompt, status, error_message, created_at, updated_at')
-      .eq('user_id', opts.userId)
-      .order('created_at', { ascending: false })
-    if (error) throw new Error(error.message)
-    return data ?? []
-  }
-
   const { data: jobs, error } = await opts.supabase
     .from('generation_jobs')
     .select('*')

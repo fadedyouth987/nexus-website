@@ -9,7 +9,7 @@ import {
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: { jobId: string } }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -18,26 +18,26 @@ export async function GET(
     }
 
     const userId = session.user.id
-    const generationId = params.id
+    const jobId = params.jobId
 
     const orgIds = await getActiveOrgIdsForUser(userId)
     if (orgIds.length === 0) {
-      return NextResponse.json({ error: 'Generation not found' }, { status: 404 })
+      return NextResponse.json({ error: 'Job not found' }, { status: 404 })
     }
 
-    const job = await getGenerationJobById(generationId, userId, { orgIds })
+    const job = await getGenerationJobById(jobId, userId, { orgIds })
     if (!job) {
-      return NextResponse.json({ error: 'Generation not found' }, { status: 404 })
+      return NextResponse.json({ error: 'Job not found' }, { status: 404 })
     }
 
-    const assets = await getGenerationAssetsByJobId(generationId, userId, { orgIds })
+    const assets = await getGenerationAssetsByJobId(jobId, userId, { orgIds })
 
     return NextResponse.json({
       job,
       assets,
     })
   } catch (error) {
-    console.error('[api/generations/[id]] error:', error)
+    console.error('[api/jobs/[job_id]] error:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

@@ -54,4 +54,23 @@ export class BullMqQueueProvider implements QueueProvider {
       removeOnFail: 200,
     })
   }
+
+  async depth(queueName: string): Promise<number> {
+    try {
+      const queue = getQueue(queueName)
+      // Cast to any to access BullMQ internal methods
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const q = queue as any
+      // Get waiting + delayed + paused counts
+      const [waiting, delayed, paused] = await Promise.all([
+        q.getWaitingCount?.() ?? Promise.resolve(0),
+        q.getDelayedCount?.() ?? Promise.resolve(0),
+        q.getPausedCount?.() ?? Promise.resolve(0),
+      ])
+      return (waiting || 0) + (delayed || 0) + (paused || 0)
+    } catch (error) {
+      console.error(`Failed to get queue depth for ${queueName}:`, error)
+      return 0
+    }
+  }
 }

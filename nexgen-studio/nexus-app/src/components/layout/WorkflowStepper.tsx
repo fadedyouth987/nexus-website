@@ -90,7 +90,7 @@ export function WorkflowStepper() {
               </span>
               <span className="hidden sm:inline">{phase.label}</span>
             </Link>
-            {idx < PHASES.length - 1 && (
+            {idx < WORKFLOW_PHASES.length - 1 && (
               <div
                 className={cn(
                   'h-px w-3',

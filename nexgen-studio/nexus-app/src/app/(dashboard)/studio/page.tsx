@@ -837,6 +837,27 @@ export default function StudioPage() {
           <div className="flex flex-1 items-center justify-center overflow-y-auto p-4">
             {generatedAssets.length > 0 ? (
               <div className="w-full max-w-5xl space-y-4">
+                {/* Post-generation CTA banner */}
+                <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <h3 className="text-sm font-semibold text-foreground">Generation complete</h3>
+                      <p className="text-[11px] text-muted-foreground">
+                        {generatedAssets.length} asset{generatedAssets.length === 1 ? '' : 's'} ready to use
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="outline" asChild>
+                        <Link href="/gallery">View in Gallery</Link>
+                      </Button>
+                      <Button size="sm" asChild>
+                        <Link href={`/planner?assets=${generatedAssets.map((a) => a.id).join(',')}&action=schedule`}>
+                          Schedule Assets →
+                        </Link>
+                      </Button>
+                    </div>
+                  </div>
+                </div>
                 <div className={cn('grid gap-3', generatedAssets.length === 1 ? 'grid-cols-1 max-w-2xl mx-auto' : 'grid-cols-1 sm:grid-cols-2')}>
                   {generatedAssets.map((asset) => (
                     <div key={asset.id} className="group rounded-lg border border-border/50 bg-card/80 overflow-hidden shadow-sm backdrop-blur-sm">
@@ -857,7 +878,7 @@ export default function StudioPage() {
                           <Link href="/gallery">Gallery</Link>
                         </Button>
                         <Button size="sm" variant="ghost" className="text-[11px] flex-1 h-7" asChild>
-                          <Link href="/planner">Schedule</Link>
+                          <Link href={`/planner?assetId=${asset.id}&action=schedule`}>Schedule</Link>
                         </Button>
                       </div>
                     </div>

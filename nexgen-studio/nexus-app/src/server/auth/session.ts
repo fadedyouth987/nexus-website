@@ -51,6 +51,34 @@ export async function requireAppSession(): Promise<AppSession> {
   }
 }
 
+/**
+ * Require admin role for admin-only routes
+ * Checks if user has admin role in their organization
+ */
+export async function requireAdminRole(session: AppSession): Promise<void> {
+  const admin = getSupabaseAdmin()
+
+  // Check org_members_v2 for admin role
+  const { data: member, error } = await admin
+    .from('org_members_v2')
+    .select('role')
+    .eq('user_id', session.userId)
+    .eq('org_id', session.orgId)
+    .maybeSingle()
+
+  if (error) {
+    throw new Error('Failed to verify admin role')
+  }
+
+  const isAdmin = member?.role === 'admin' || member?.role === 'owner'
+
+  if (!isAdmin) {
+    const err = new Error('Admin access required')
+    ;(err as Error & { status?: number }).status = 403
+    throw err
+  }
+}
+
 async function getLegacyOrganizationMemberOrgId(
   admin: ReturnType<typeof getSupabaseAdmin>,
   userId: string

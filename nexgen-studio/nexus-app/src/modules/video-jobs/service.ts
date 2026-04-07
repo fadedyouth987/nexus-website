@@ -1,3 +1,18 @@
+/**
+ * Video Jobs Service - Campaign Layer for Generation Jobs
+ *
+ * STATUS TRUTH HIERARCHY:
+ *   generation_jobs (source) -> video_jobs (sync on read)
+ *
+ * SYNC BEHAVIOR:
+ * - getVideoJobById() performs ON-DEMAND SYNC from generation_jobs
+ * - This syncs status when a user views a job, ensuring fresh data
+ * - Campaign context (project_id, campaign_id) is managed in video_jobs
+ * - Generation status is the source of truth in generation_jobs
+ *
+ * For new code, prefer reading from generation_jobs directly when possible.
+ */
+
 import type { AppSession } from '@/server/auth/session'
 import { getQueueProvider } from '@/server/providers/queue'
 import { createApiError } from '@/server/api/route'

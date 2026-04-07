@@ -1,3 +1,28 @@
+/**
+ * Generation Job Processor - Status Truth Architecture
+ *
+ * SOURCE OF TRUTH HIERARCHY:
+ * 1. generation_jobs - PRIMARY source of truth for job status
+ *    - Updates happen synchronously and block worker
+ *    - All reads should use this table when in 'exec' mode
+ *
+ * 2. legacy.generations - READ-ONLY MIRROR (via BLUEPRINT_MIRROR_LEGACY=1)
+ *    - Mirrors status from generation_jobs for backward compatibility
+ *    - Updates are ASYNC/FIRE-AND-FORGET via mirrorJobStatus()
+ *    - Failures are logged but don't block the worker
+ *    - May lag behind generation_jobs (eventual consistency)
+ *
+ * 3. video_jobs - CAMPAIGN LAYER (optional)
+ *    - Links to generation_jobs via source_generation_job_id
+ *    - Tracks campaign/project context separately
+ *    - Status sync is async via getVideoJobById() service calls
+ *
+ * STATUS FLOW:
+ *   QUEUED -> GENERATING -> READY (success)
+ *                          -> FAILED (error)
+ *                          -> CANCELED (user cancelled)
+ */
+
 import type { BlueprintJobRecord } from '../core/types'
 import { getWorkerSupabaseAdmin } from '../core/supabaseAdmin'
 import { comfyBaseUrl, connectProgressWs, downloadOutput, fetchHistory, submitPrompt } from '../core/comfyClient'
@@ -15,6 +40,25 @@ import type { ComfyUIWorkflow } from '../../../src/lib/comfyui/types'
 import { classifyUnderlyingGenerationFailure } from '../../../src/modules/video-jobs/service'
 import { getVideoJobByGenerationJobId } from '../../../src/modules/video-jobs/repository'
 import { recordUsageEvent } from '../../../src/modules/usage-events'
+import {
+  classifyError,
+  shouldAutoRetry,
+  sleep,
+} from '../core/retryPolicy'
+import {
+  isProviderAvailable,
+  recordSuccess,
+  recordFailure,
+  getProviderKey,
+} from '../core/circuitBreaker'
+import {
+  notifyGenerationGenerating,
+  notifyGenerationReady,
+  notifyGenerationFailed,
+  notifyGenerationCancelled,
+} from '../core/webhookDelivery'
+import { logger } from '../core/logger'
+import { queueName } from '../../../src/lib/blueprint/queue'
 
 class GenerationCancelledError extends Error {
   constructor(message = 'Generation cancelled') {
@@ -313,7 +357,7 @@ async function upsertGeneratedAsset(admin: any, job: BlueprintJobRecord, asset: 
     throw new Error(error?.message || 'Failed to upsert generated asset')
   }
 
-  await mirrorAsset(admin, job, data)
+  mirrorAsset(admin, job, data) // fire-and-forget async mirror
   return data
 }
 
@@ -396,6 +440,21 @@ export async function processGeneration(jobId: string) {
     return
   }
 
+  // Check circuit breaker before processing
+  const backend = detectBackend()
+  const providerKey = getProviderKey(backend, job.mode, job.content_policy)
+  const circuitStatus = isProviderAvailable(providerKey)
+
+  if (!circuitStatus.available) {
+    // Provider circuit is open - fail fast and let retry policy handle it
+    const circuitError = new Error(
+      `Circuit breaker open: ${circuitStatus.reason}. Will retry when provider recovers.`
+    )
+    // Tag error as transient so retry policy will handle it
+    ;(circuitError as Error & { isCircuitBreakerOpen?: boolean }).isCircuitBreakerOpen = true
+    throw circuitError
+  }
+
   await throwIfGenerationCancelled(admin, job.id)
 
   const { data: user, error: uErr } = await admin
@@ -449,7 +508,6 @@ export async function processGeneration(jobId: string) {
     finalInputs.reference_image_url = refImageUrl
   }
   let promptId = job.prompt_id as string | null
-  const backend = detectBackend()
   const reservedCredits = resolveGenerationRunTokenCost({
     type: job.mode,
     templateBaseCostCredits: Number(template?.base_cost_credits || 0) || null,
@@ -481,6 +539,12 @@ export async function processGeneration(jobId: string) {
       .neq('status', 'CANCELED')
 
     await publishJobEvent(job.id, { type: 'status', status: 'GENERATING', percent: 0 })
+
+    // Notify webhooks that generation has started
+    notifyGenerationGenerating(admin, job.id, job.organization_id, {
+      provider: backend,
+      promptId: promptId || undefined,
+    }).catch(() => {}) // Fire-and-forget
 
     const shouldAbort = () => isGenerationCancelled(admin, job.id)
     const execution =
@@ -574,10 +638,10 @@ export async function processGeneration(jobId: string) {
       .eq('id', job.id)
       .neq('status', 'CANCELED')
 
-    await mirrorJobStatus(admin, {
+    mirrorJobStatus(admin, {
       ...job,
       status: 'READY',
-    })
+    }) // fire-and-forget async mirror
 
     await safeRecordGenerationUsageEvent({
       generationJobId: job.id,
@@ -601,6 +665,15 @@ export async function processGeneration(jobId: string) {
         assetCount: execution.outputs.length,
       },
     })
+
+    // Record success for circuit breaker
+    recordSuccess(providerKey)
+
+    // Notify webhooks of completion
+    notifyGenerationReady(admin, job.id, job.organization_id, {
+      assetIds: execution.outputs.map((o: any) => o.filename),
+      assetCount: execution.outputs.length,
+    }).catch(() => {}) // Fire-and-forget
 
     await publishJobEvent(job.id, { type: 'status', status: 'READY', percent: 100 })
   } catch (error) {
@@ -631,11 +704,11 @@ export async function processGeneration(jobId: string) {
 
       const releasedCredits = await releaseReservedCreditsIfNeeded(admin, job)
 
-      await mirrorJobStatus(admin, {
+      mirrorJobStatus(admin, {
         ...job,
         status: 'CANCELED',
         error: error.message,
-      })
+      }) // fire-and-forget async mirror
 
       await publishJobEvent(job.id, {
         type: 'status',
@@ -669,31 +742,98 @@ export async function processGeneration(jobId: string) {
         })
       }
 
+      // Notify webhooks of cancellation
+      notifyGenerationCancelled(admin, job.id, job.organization_id, {
+        reason: error.message,
+      }).catch(() => {}) // Fire-and-forget
+
       return
     }
+
+    // Check for auto-retry on transient failures
+    const currentAttempt = Number(job.attempt || 0)
+    const errorMessage = error instanceof Error ? error.message : 'Generation failed'
+    const retryDecision = shouldAutoRetry(currentAttempt, errorMessage)
+
+    if (retryDecision.shouldRetry && retryDecision.delayMs) {
+      // Record failure for circuit breaker
+      recordFailure(providerKey, errorMessage)
+
+      // Notify about retry via webhook
+      notifyGenerationFailed(admin, job.id, job.organization_id, {
+        error: errorMessage,
+        failureCode: classifyUnderlyingGenerationFailure(errorMessage),
+        willRetry: true,
+      }).catch(() => {}) // Fire-and-forget
+
+      // Schedule retry by re-enqueue with delay
+      await admin
+        .from('generation_jobs')
+        .update({
+          status: 'QUEUED',
+          attempt: currentAttempt + 1,
+          error: `Auto-retry scheduled in ${Math.round(retryDecision.delayMs / 1000)}s: ${errorMessage}`,
+          progress_json: {
+            status: 'retrying',
+            percent: 0,
+            message: `Retry ${currentAttempt + 1}/3 scheduled`,
+            updatedAt: new Date().toISOString(),
+          },
+          scheduled_retry_at: new Date(Date.now() + retryDecision.delayMs).toISOString(),
+        })
+        .eq('id', job.id)
+
+      // Re-enqueue job with delay by adding back to queue
+      // The worker will process it when it's ready (respecting scheduled_retry_at)
+      const { getQueueProvider } = await import('@/server/providers/queue')
+      const queue = getQueueProvider()
+      await queue.enqueue(queueName(job.content_policy, job.mode), {
+        type: 'generation.retry',
+        id: job.id,
+        metadata: { orgId: job.organization_id, attempt: currentAttempt + 1 },
+      })
+
+      logger.info(`Auto-retry scheduled for job ${job.id}`, {
+        attempt: currentAttempt + 1,
+        delayMs: retryDecision.delayMs,
+        error: errorMessage,
+      })
+
+      return // Don't throw - we've handled the retry
+    }
+
+    // No retry - mark as permanently failed
+    recordFailure(providerKey, errorMessage)
 
     await admin
       .from('generation_jobs')
       .update({
         status: 'FAILED',
         prompt_id: promptId,
-        error: error instanceof Error ? error.message : 'Generation failed',
+        error: errorMessage,
       })
       .eq('id', job.id)
 
     const releasedCredits = await releaseReservedCreditsIfNeeded(admin, job)
 
-    await mirrorJobStatus(admin, {
+    mirrorJobStatus(admin, {
       ...job,
       status: 'FAILED',
-      error: error instanceof Error ? error.message : 'Generation failed',
-    })
+      error: errorMessage,
+    }) // fire-and-forget async mirror
 
     await publishJobEvent(job.id, {
       type: 'status',
       status: 'FAILED',
-      message: error instanceof Error ? error.message : 'Generation failed',
+      message: errorMessage,
     })
+
+    // Notify webhooks of permanent failure
+    notifyGenerationFailed(admin, job.id, job.organization_id, {
+      error: errorMessage,
+      failureCode: classifyUnderlyingGenerationFailure(errorMessage),
+      willRetry: false,
+    }).catch(() => {}) // Fire-and-forget
 
     await safeRecordGenerationUsageEvent({
       generationJobId: job.id,
@@ -703,8 +843,9 @@ export async function processGeneration(jobId: string) {
       provider: backend,
       metadata: {
         promptId,
-        failureCode: classifyUnderlyingGenerationFailure(error instanceof Error ? error.message : null),
-        message: error instanceof Error ? error.message : 'Generation failed',
+        failureCode: classifyUnderlyingGenerationFailure(errorMessage),
+        message: errorMessage,
+        autoRetried: false,
       },
     })
     if (releasedCredits > 0) {

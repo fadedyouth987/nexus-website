@@ -23,6 +23,29 @@ type CreateJobInput = {
   mode: 'IMAGE' | 'VIDEO'
   legacyMode?: string
   inputs: Record<string, unknown>
+  /**
+   * Whether this job requires approval before processing.
+   * If true, job is created with PENDING_APPROVAL status.
+   * If false (default), job goes directly to QUEUED.
+   */
+  requiresApproval?: boolean
+}
+
+/**
+ * Check if organization has approval workflow enabled
+ */
+async function isApprovalRequired(
+  admin: ReturnType<typeof getBlueprintSupabaseAdmin>,
+  orgId: string
+): Promise<boolean> {
+  const { data } = await admin
+    .from('organizations')
+    .select('settings_json')
+    .eq('id', orgId)
+    .maybeSingle()
+
+  const settings = data?.settings_json as Record<string, unknown> | undefined
+  return settings?.require_job_approval === true
 }
 
 export async function createBlueprintGenerationJob(input: CreateJobInput) {
@@ -120,6 +143,11 @@ export async function createBlueprintGenerationJob(input: CreateJobInput) {
     allowed: true,
   }
 
+  // Determine if approval is required
+  const orgRequiresApproval = await isApprovalRequired(admin, influencer.org_id)
+  const requiresApproval = input.requiresApproval ?? orgRequiresApproval
+  const initialStatus = requiresApproval ? 'PENDING_APPROVAL' : 'QUEUED'
+
   const { data: job, error: insertError } = await admin
     .from('generation_jobs')
     .insert({
@@ -130,9 +158,11 @@ export async function createBlueprintGenerationJob(input: CreateJobInput) {
       mode: input.mode,
       legacy_mode: input.legacyMode || null,
       content_policy: template.content_policy,
-      status: 'QUEUED',
+      status: initialStatus,
       inputs_json: input.inputs,
       policy_decision_json: policyDecision,
+      approval_required: requiresApproval,
+      approved_at: requiresApproval ? null : new Date().toISOString(),
     })
     .select('*')
     .single()
@@ -141,14 +171,17 @@ export async function createBlueprintGenerationJob(input: CreateJobInput) {
     throw new Error(insertError?.message || 'Failed to create generation job')
   }
 
-  await reserveBlueprintCredits(
-    input.userId,
-    Number(template.base_cost_credits || 0),
-    'GenerationJob',
-    job.id
-  )
+  // Only reserve credits and enqueue if not waiting for approval
+  if (!requiresApproval) {
+    await reserveBlueprintCredits(
+      input.userId,
+      Number(template.base_cost_credits || 0),
+      'GenerationJob',
+      job.id
+    )
 
-  await enqueueBlueprintGeneration(job.id, queueName(template.content_policy, template.type))
+    await enqueueBlueprintGeneration(job.id, queueName(template.content_policy, template.type))
+  }
 
   await writeBlueprintAudit(input.userId, 'GENERATION_ENQUEUE', 'GenerationJob', job.id, {
     workflowTemplateId: template.id,
@@ -159,7 +192,7 @@ export async function createBlueprintGenerationJob(input: CreateJobInput) {
     supabase: admin,
     orgId: influencer.org_id,
     actorId: input.userId,
-    action: 'generation.queued',
+    action: requiresApproval ? 'generation.pending_approval' : 'generation.queued',
     entityType: 'generation_job',
     entityId: job.id,
     metadata: {
@@ -169,6 +202,7 @@ export async function createBlueprintGenerationJob(input: CreateJobInput) {
       mode: input.mode,
       legacy_mode: input.legacyMode || null,
       content_policy: template.content_policy,
+      approval_required: requiresApproval,
       source: 'blueprint.create_job',
     },
   })
@@ -233,4 +267,127 @@ export async function getWorkflowTemplateIdBySlug(slug: string) {
     .eq('slug', slug)
     .maybeSingle()
   return data?.id || null
+}
+
+/**
+ * Approve a pending generation job and enqueue it for processing
+ */
+export async function approveGenerationJob(
+  jobId: string,
+  approverUserId: string
+): Promise<{ success: boolean; error?: string }> {
+  const admin = getBlueprintSupabaseAdmin()
+
+  // Get job details
+  const { data: job, error: fetchError } = await admin
+    .from('generation_jobs')
+    .select('*')
+    .eq('id', jobId)
+    .eq('status', 'PENDING_APPROVAL')
+    .single()
+
+  if (fetchError || !job) {
+    return { success: false, error: 'Job not found or not pending approval' }
+  }
+
+  // Update job status
+  const { error: updateError } = await admin
+    .from('generation_jobs')
+    .update({
+      status: 'QUEUED',
+      approved_at: new Date().toISOString(),
+      approved_by: approverUserId,
+    })
+    .eq('id', jobId)
+    .eq('status', 'PENDING_APPROVAL')
+
+  if (updateError) {
+    return { success: false, error: updateError.message }
+  }
+
+  // Reserve credits and enqueue
+  const { data: template } = await admin
+    .from('workflow_templates')
+    .select('base_cost_credits, content_policy, type')
+    .eq('id', job.workflow_template_id)
+    .single()
+
+  if (template) {
+    await reserveBlueprintCredits(
+      job.user_id,
+      Number(template.base_cost_credits || 0),
+      'GenerationJob',
+      jobId
+    )
+
+    await enqueueBlueprintGeneration(jobId, queueName(template.content_policy, template.type))
+  }
+
+  await writeActivityLog({
+    supabase: admin,
+    orgId: job.organization_id,
+    actorId: approverUserId,
+    action: 'generation.approved',
+    entityType: 'generation_job',
+    entityId: jobId,
+    metadata: {
+      original_user_id: job.user_id,
+      source: 'blueprint.approve_job',
+    },
+  })
+
+  return { success: true }
+}
+
+/**
+ * Reject a pending generation job
+ */
+export async function rejectGenerationJob(
+  jobId: string,
+  approverUserId: string,
+  reason?: string
+): Promise<{ success: boolean; error?: string }> {
+  const admin = getBlueprintSupabaseAdmin()
+
+  const { data: job, error: fetchError } = await admin
+    .from('generation_jobs')
+    .select('organization_id, user_id')
+    .eq('id', jobId)
+    .eq('status', 'PENDING_APPROVAL')
+    .single()
+
+  if (fetchError || !job) {
+    return { success: false, error: 'Job not found or not pending approval' }
+  }
+
+  const { error: updateError } = await admin
+    .from('generation_jobs')
+    .update({
+      status: 'REJECTED',
+      approved_at: new Date().toISOString(),
+      approved_by: approverUserId,
+      error: reason || 'Rejected by approver',
+    })
+    .eq('id', jobId)
+    .eq('status', 'PENDING_APPROVAL')
+
+  if (updateError) {
+    return { success: false, error: updateError.message }
+  }
+
+  await writeActivityLog({
+    supabase: admin,
+    orgId: job.organization_id,
+    actorId: approverUserId,
+    action: 'generation.rejected',
+    entityType: 'generation_job',
+    entityId: jobId,
+    metadata: {
+      original_user_id: job.user_id,
+      rejection_reason: reason,
+      source: 'blueprint.reject_job',
+    },
+  })
+
+  return { success: true }
 }
