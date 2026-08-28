@@ -101,6 +101,7 @@ export class InstagramProvider implements ISocialProvider {
     try {
       const { accessToken, caption, mediaUrls } = input
       const mediaType = mediaUrls.length > 1 ? 'CAROUSEL' : mediaUrls.length === 1 ? 'IMAGE' : 'NONE'
+      void mediaType
       let containerId: string
 
       if (mediaUrls.length === 0) {
@@ -153,6 +154,7 @@ export class InstagramProvider implements ISocialProvider {
     accessToken: string,
     options?: { since?: Date; until?: Date }
   ): Promise<AnalyticsMetric[]> {
+    void options
     const metrics: AnalyticsMetric[] = []
     try {
       const fields = 'insights.metric(impressions,reach,engagement,saved)'
@@ -183,8 +185,8 @@ export class InstagramProvider implements ISocialProvider {
     const mode = input.headers['x-hub-mode']
     const token = input.headers['x-hub-verify-token']
     const challenge = input.headers['x-hub-challenge']
-    const verifyToken = process.env.META_WEBHOOK_VERIFY_TOKEN || 'nexgen-verify'
-    if (mode === 'subscribe' && token === verifyToken && challenge) {
+    const verifyToken = process.env.META_WEBHOOK_VERIFY_TOKEN?.trim()
+    if (verifyToken && mode === 'subscribe' && token === verifyToken && challenge) {
       return { valid: true, challenge }
     }
     if (input.signature && appSecret) {
