@@ -8,7 +8,7 @@ const envSchema = z.object({
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
 
   // Auth
-  NEXTAUTH_SECRET: z.string().min(1),
+  NEXTAUTH_SECRET: z.string().min(32),
   NEXTAUTH_URL: z.string().url(),
   NEXT_PUBLIC_SITE_URL: z.string().url().optional().default('http://localhost:3000'),
 
@@ -35,11 +35,16 @@ const envSchema = z.object({
 });
 
 function validateEnv() {
+  // CI/OpenNext builds must not require production-only secrets. Runtime
+  // validation still runs because SKIP_ENV_VALIDATION is not set on the Worker.
+  if (process.env.SKIP_ENV_VALIDATION === '1') {
+    return process.env as unknown as z.infer<typeof envSchema>;
+  }
+
   const parsed = envSchema.safeParse(process.env);
 
   if (!parsed.success) {
     console.error('❌ Invalid environment variables:', parsed.error.flatten().fieldErrors);
-    // In production, we might want to throw an error
     if (process.env.NODE_ENV === 'production') {
       throw new Error('Invalid environment variables');
     }
