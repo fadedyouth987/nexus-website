@@ -4,8 +4,14 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { Providers } from "@/components/providers/SessionProvider";
 
 export const metadata: Metadata = {
-  title: "AI Influencer Nexus",
-  description: "The OS for AI Creators",
+  metadataBase: new URL("https://jobryn.org"),
+  title: {
+    default: "Jobryn",
+    template: "%s | Jobryn",
+  },
+  description:
+    "Jobryn helps service businesses turn enquiries into booked work, quotes, invoices, payments, reviews, and repeat revenue.",
+  applicationName: "Jobryn",
 };
 
 export default function RootLayout({
@@ -15,7 +21,6 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      {/* suppressHydrationWarning: avoids noise when browser extensions (e.g. that add bis_skin_checked) modify the DOM before React hydrates. */}
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
@@ -24,9 +29,7 @@ export default function RootLayout({
       <body suppressHydrationWarning className="antialiased">
         <div suppressHydrationWarning>
           <Providers>
-            <TooltipProvider>
-              {children}
-            </TooltipProvider>
+            <TooltipProvider>{children}</TooltipProvider>
           </Providers>
         </div>
       </body>
