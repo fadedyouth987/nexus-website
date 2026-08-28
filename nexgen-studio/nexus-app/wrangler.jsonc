@@ -1,0 +1,24 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "jobryn",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-08-29",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "observability": {
+    "enabled": true
+  },
+  "routes": [
+    {
+      "pattern": "jobryn.org",
+      "custom_domain": true
+    },
+    {
+      "pattern": "www.jobryn.org",
+      "custom_domain": true
+    }
+  ]
+}
