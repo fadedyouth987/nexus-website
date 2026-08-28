@@ -83,7 +83,8 @@ export class FacebookProvider implements ISocialProvider {
   async verifyWebhook(input: WebhookVerificationInput): Promise<WebhookVerificationResult> {
     const token = input.headers['x-hub-verify-token']
     const challenge = input.headers['x-hub-challenge']
-    if (token === (process.env.META_WEBHOOK_VERIFY_TOKEN || 'nexgen-verify') && challenge) {
+    const verifyToken = process.env.META_WEBHOOK_VERIFY_TOKEN?.trim()
+    if (verifyToken && token === verifyToken && challenge) {
       return { valid: true, challenge }
     }
     return { valid: false }
