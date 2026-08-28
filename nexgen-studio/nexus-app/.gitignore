@@ -1,5 +1,8 @@
-.env.local
-.env
+# Local environment and Cloudflare development secrets
+.env*
+!.env.example
+.dev.vars*
+
 .next
 .next.stale
 node_modules
