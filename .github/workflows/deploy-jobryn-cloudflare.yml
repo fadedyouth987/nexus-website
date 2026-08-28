@@ -18,9 +18,19 @@ on:
 jobs:
   validate:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     defaults:
       run:
         working-directory: nexgen-studio/nexus-app
+    env:
+      SKIP_ENV_VALIDATION: '1'
+      NEXT_PUBLIC_APP_URL: https://jobryn.org
+      NEXT_PUBLIC_SITE_URL: https://jobryn.org
+      NEXTAUTH_URL: https://jobryn.org
+      NEXT_PUBLIC_SUPABASE_URL: https://pmqtkcenovlwshurglkp.supabase.co
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: sb_publishable_H7ggm7ASPc-HgDQdMIBWeQ__9GCzVus
+      SUPABASE_URL: https://pmqtkcenovlwshurglkp.supabase.co
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -52,11 +62,19 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: validate
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     defaults:
       run:
         working-directory: nexgen-studio/nexus-app
-    permissions:
-      contents: read
+    env:
+      SKIP_ENV_VALIDATION: '1'
+      NEXT_PUBLIC_APP_URL: https://jobryn.org
+      NEXT_PUBLIC_SITE_URL: https://jobryn.org
+      NEXTAUTH_URL: https://jobryn.org
+      NEXT_PUBLIC_SUPABASE_URL: https://pmqtkcenovlwshurglkp.supabase.co
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: sb_publishable_H7ggm7ASPc-HgDQdMIBWeQ__9GCzVus
+      SUPABASE_URL: https://pmqtkcenovlwshurglkp.supabase.co
     steps:
       - name: Checkout
         uses: actions/checkout@v4
