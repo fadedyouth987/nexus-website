@@ -1,149 +1,98 @@
-import Image from 'next/image'
 import Link from 'next/link'
+import { ArrowRight, CalendarCheck2, CreditCard, MessageSquareText, ReceiptText, UsersRound } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { SITE_NAME } from '@/lib/sitemap'
 import { MarketingFooter } from '@/components/marketing/MarketingFooter'
-import { LandingWaitlistSection } from '@/components/marketing/LandingWaitlistSection'
-import { cn } from '@/lib/core/utils'
 
-const VALUE_PROPS = [
+const FLOW = [
   {
-    title: 'Creation',
-    body: 'Photoreal images, talking-head video, style and character presets. Identity consistency across every asset.',
-    image: '/landing/creation-scene.svg',
-    alt: 'Creation studio preview artwork',
+    title: 'Capture every enquiry',
+    body: 'Bring new leads into one workspace so calls, messages, forms, and follow-ups do not disappear between tools.',
+    icon: MessageSquareText,
   },
   {
-    title: 'Automation',
-    body: 'Content, scheduling, engagement, and monetization in one OS. Set rules once; your influencers run.',
-    image: '/landing/automation-scene.svg',
-    alt: 'Automation pipeline artwork',
+    title: 'Convert enquiries into booked work',
+    body: 'Qualify the customer, track the opportunity, schedule the job, and keep the next action obvious.',
+    icon: CalendarCheck2,
   },
   {
-    title: 'Growth',
-    body: 'Analytics, A/B testing, multi-platform scheduling, and 30-day autopilot. Scale without the grind.',
-    image: '/landing/growth-scene.svg',
-    alt: 'Growth dashboard artwork',
+    title: 'Quote, invoice, and get paid',
+    body: 'Move from approved work to quotes, invoices, payments, and revenue attribution without rebuilding the customer record.',
+    icon: ReceiptText,
   },
 ]
 
-/** Server Component: static marketing HTML avoids full-tree hydration (and extension-injected attrs like `bis_skin_checked`). */
+const OPERATIONS = [
+  { label: 'Customers & leads', icon: UsersRound },
+  { label: 'Conversations & follow-up', icon: MessageSquareText },
+  { label: 'Bookings & jobs', icon: CalendarCheck2 },
+  { label: 'Quotes & invoices', icon: ReceiptText },
+  { label: 'Payments & subscriptions', icon: CreditCard },
+]
+
 export default function LandingPage() {
   return (
-    <div className="landing-lux-root min-h-screen bg-background text-foreground" suppressHydrationWarning>
-      <div className="landing-lux-backdrop" aria-hidden suppressHydrationWarning>
-        <div className="landing-lux-orb landing-lux-orb-1" suppressHydrationWarning />
-        <div className="landing-lux-orb landing-lux-orb-2" suppressHydrationWarning />
-        <div className="landing-lux-orb landing-lux-orb-3" suppressHydrationWarning />
-        <div className="landing-lux-grid" suppressHydrationWarning />
-      </div>
-
-      <div className="landing-lux-content" suppressHydrationWarning>
-        <section className="overflow-hidden py-20 sm:py-24" suppressHydrationWarning>
-          <div className="app-page-shell grid gap-10 lg:grid-cols-[minmax(0,1.05fr)_minmax(520px,0.95fr)] lg:items-center" suppressHydrationWarning>
-            <div className="space-y-7" suppressHydrationWarning>
-              <div className={cn('app-section-kicker', 'landing-lux-kicker')} suppressHydrationWarning>
-                Beta launch system for AI creators
-              </div>
-              <div className="app-section-copy space-y-4" suppressHydrationWarning>
-                <h1
-                  className={cn(
-                    'app-section-title max-w-4xl text-4xl sm:text-5xl md:text-6xl',
-                    'landing-lux-title'
-                  )}
-                >
-                  {SITE_NAME}
+    <div className="min-h-screen bg-background text-foreground">
+      <main>
+        <section className="border-b border-border/70 py-20 sm:py-28">
+          <div className="app-page-shell grid gap-12 lg:grid-cols-[minmax(0,1.1fr)_minmax(360px,0.9fr)] lg:items-center">
+            <div className="space-y-7">
+              <div className="app-section-kicker">AI revenue operations for service businesses</div>
+              <div className="space-y-5">
+                <h1 className="max-w-4xl text-4xl font-semibold tracking-tight sm:text-5xl md:text-6xl">
+                  Jobryn turns enquiries into booked work and paid revenue.
                 </h1>
                 <p className="max-w-2xl text-lg text-muted-foreground sm:text-xl">
-                  Create, automate, and grow AI influencers end-to-end.
-                </p>
-                <p className="app-section-description max-w-2xl sm:text-base">
-                  The full operating system from identity creation to automation, publishing, analytics,
-                  monetization, and agency workflows. Not just images, a brand that runs.
+                  One operating system for the path from first enquiry through customer, booking, job, quote, invoice, payment, review, and repeat business.
                 </p>
               </div>
-              <div className="flex flex-wrap gap-3" suppressHydrationWarning>
-                <Button
-                  asChild
-                  size="lg"
-                  className="relative overflow-hidden border border-primary/20 bg-primary shadow-[0_0_40px_-8px_oklch(0.55_0.2_280/0.55)] transition-[box-shadow,transform] duration-500 hover:shadow-[0_0_52px_-6px_oklch(0.6_0.22_290/0.65)]"
-                >
-                  <Link href="#waitlist">
-                    Join the beta waitlist
-                    <span className="absolute -right-2 -top-2 flex h-5 items-center rounded-full bg-emerald-500 px-2 text-[10px] font-bold text-white shadow-[0_0_16px_oklch(0.65_0.2_160/0.7)]">
-                      Early access
-                    </span>
+              <div className="flex flex-wrap gap-3">
+                <Button asChild size="lg">
+                  <Link href="/auth">
+                    Open Jobryn <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
                 </Button>
-                <Button
-                  asChild
-                  variant="outline"
-                  size="lg"
-                  className="border-primary/25 bg-background/40 backdrop-blur-md transition-[border-color,box-shadow] duration-300 hover:border-primary/40 hover:shadow-[0_0_24px_-10px_oklch(0.55_0.18_280/0.4)]"
-                >
-                  <Link href="/auth">Sign in</Link>
+                <Button asChild size="lg" variant="outline">
+                  <Link href="/pricing">View pricing</Link>
                 </Button>
-              </div>
-              <div className="app-stat-grid max-w-2xl" suppressHydrationWarning>
-                <div className={cn('app-surface-card landing-lux-stat p-4')} suppressHydrationWarning>
-                  <div className="text-2xl font-semibold tabular-nums" suppressHydrationWarning>24/7</div>
-                  <div className="mt-1 text-sm text-muted-foreground" suppressHydrationWarning>Always-on content engine</div>
-                </div>
-                <div className={cn('app-surface-card landing-lux-stat p-4')} suppressHydrationWarning>
-                  <div className="text-2xl font-semibold tabular-nums" suppressHydrationWarning>3x</div>
-                  <div className="mt-1 text-sm text-muted-foreground" suppressHydrationWarning>Faster launch to first funnel</div>
-                </div>
-                <div className={cn('app-surface-card landing-lux-stat p-4')} suppressHydrationWarning>
-                  <div className="text-2xl font-semibold tabular-nums" suppressHydrationWarning>1 OS</div>
-                  <div className="mt-1 text-sm text-muted-foreground" suppressHydrationWarning>Studio, scheduler, and analytics</div>
-                </div>
               </div>
             </div>
 
-            <div className="relative" suppressHydrationWarning>
-              <div className="landing-lux-hero-panel p-3" suppressHydrationWarning>
-                <Image
-                  src="/landing/hero-showcase.svg"
-                  alt="Nexus Studio hero artwork showing creator, automation, and growth surfaces"
-                  width={1600}
-                  height={960}
-                  priority
-                  unoptimized
-                  className="relative z-10 h-auto w-full rounded-[24px]"
-                />
+            <div className="rounded-3xl border border-border bg-muted/30 p-6 shadow-sm">
+              <div className="mb-5 text-sm font-medium text-muted-foreground">Jobryn revenue flow</div>
+              <div className="space-y-3">
+                {OPERATIONS.map(({ label, icon: Icon }, index) => (
+                  <div key={label} className="flex items-center gap-3 rounded-2xl border border-border bg-background p-4">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-muted">
+                      <Icon className="h-4 w-4" />
+                    </div>
+                    <div className="flex-1 text-sm font-medium">{label}</div>
+                    <div className="text-xs text-muted-foreground">{index + 1}</div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
         </section>
 
-        <section className="border-t border-border bg-muted/20 py-16" suppressHydrationWarning>
-          <div className="app-page-shell space-y-10" suppressHydrationWarning>
-            <div className="app-section-header text-center" suppressHydrationWarning>
-              <div className="app-section-copy" suppressHydrationWarning>
-                <div className={cn('app-section-kicker', 'landing-lux-kicker')} suppressHydrationWarning>Core product motion</div>
-                <h2 className="app-section-title text-2xl">One platform. Three jobs.</h2>
-              </div>
-              <p className="app-section-description mx-auto max-w-2xl">
-                Purpose-built visuals now map to the core motions in the product.
+        <section className="py-16 sm:py-20">
+          <div className="app-page-shell space-y-10">
+            <div className="max-w-2xl space-y-3">
+              <div className="app-section-kicker">One customer lifecycle</div>
+              <h2 className="text-3xl font-semibold tracking-tight">Less tool-hopping. Clearer next actions.</h2>
+              <p className="text-muted-foreground">
+                Jobryn is being built around the operational flow a service business actually needs, rather than a pile of disconnected dashboards.
               </p>
             </div>
-            <div className="grid gap-6 md:grid-cols-3" suppressHydrationWarning>
-              {VALUE_PROPS.map((prop) => (
-                <Card key={prop.title} className={cn('app-feature-card landing-lux-card overflow-hidden')}>
-                  <div className="border-b border-border bg-background/60 p-3" suppressHydrationWarning>
-                    <Image
-                      src={prop.image}
-                      alt={prop.alt}
-                      width={1200}
-                      height={900}
-                      unoptimized
-                      className="h-auto w-full rounded-2xl"
-                    />
-                  </div>
+            <div className="grid gap-5 md:grid-cols-3">
+              {FLOW.map(({ title, body, icon: Icon }) => (
+                <Card key={title}>
                   <CardHeader>
-                    <CardTitle className="text-lg">{prop.title}</CardTitle>
-                    <CardDescription>{prop.body}</CardDescription>
+                    <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-muted">
+                      <Icon className="h-5 w-5" />
+                    </div>
+                    <CardTitle>{title}</CardTitle>
+                    <CardDescription>{body}</CardDescription>
                   </CardHeader>
                 </Card>
               ))}
@@ -151,81 +100,33 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section className="border-t border-border py-16" suppressHydrationWarning>
-          <div className="app-page-shell grid gap-8 lg:grid-cols-[minmax(0,0.72fr)_minmax(0,1fr)] lg:items-center" suppressHydrationWarning>
-            <div className="app-section-copy space-y-5" suppressHydrationWarning>
-              <div suppressHydrationWarning>
-                <div className={cn('app-section-kicker', 'landing-lux-kicker')} suppressHydrationWarning>Product preview</div>
-                <h2 className="app-section-title text-2xl">See it in action</h2>
-              </div>
-              <p className="app-section-description">
-                A looping motion asset now demonstrates the Studio, identity lock, scheduler, and engagement
-                surfaces without needing a live product walkthrough.
-              </p>
-              <div className="space-y-3 text-sm text-muted-foreground" suppressHydrationWarning>
-                <div className={cn('app-surface-card landing-lux-stat p-4')} suppressHydrationWarning>Prompt to image generation</div>
-                <div className={cn('app-surface-card landing-lux-stat p-4')} suppressHydrationWarning>
-                  Identity continuity across content
-                </div>
-                <div className={cn('app-surface-card landing-lux-stat p-4')} suppressHydrationWarning>
-                  Automated publishing and reporting
-                </div>
-              </div>
+        <section className="border-y border-border bg-muted/20 py-16">
+          <div className="app-page-shell grid gap-8 md:grid-cols-2 md:items-center">
+            <div>
+              <div className="app-section-kicker">Built for real operations</div>
+              <h2 className="mt-3 text-3xl font-semibold tracking-tight">Keep the business record connected from lead to revenue.</h2>
             </div>
-
-            <div className="landing-lux-hero-panel p-4" suppressHydrationWarning>
-              <Image
-                src="/landing/studio-demo.svg"
-                alt="Animated demo reel showing the Nexus Studio workflow"
-                width={1600}
-                height={900}
-                unoptimized
-                className="relative z-10 h-auto w-full rounded-[24px]"
-              />
+            <div className="space-y-3 text-sm text-muted-foreground">
+              <p>Workspace-based access keeps customer and operational data separated between businesses.</p>
+              <p>Supabase provides the core data and authentication layer, while billing and external integrations can be connected without exposing privileged credentials to the browser.</p>
+              <p>The production target for Jobryn is jobryn.org.</p>
             </div>
           </div>
         </section>
 
-        <section className="border-t border-border bg-muted/20 py-12" suppressHydrationWarning>
-          <div className="app-page-shell text-center" suppressHydrationWarning>
-            <h2 className="text-xl font-semibold tracking-tight">Built for creators who scale</h2>
-            <p className="mx-auto mt-3 max-w-xl text-sm text-muted-foreground">
-              From solo influencers to multi-creator agencies, NexGen Studio provides the complete operating
-              system for AI-driven content creation, scheduling, and monetization.
+        <section className="py-16">
+          <div className="app-page-shell rounded-3xl border border-border p-8 text-center sm:p-12">
+            <h2 className="text-3xl font-semibold tracking-tight">Build the customer journey once. Run it every day.</h2>
+            <p className="mx-auto mt-3 max-w-2xl text-muted-foreground">
+              Sign in to continue setting up the Jobryn workspace and the integrations that power the workflow.
             </p>
-            <div className="mt-6 flex flex-wrap items-center justify-center gap-8 text-muted-foreground sm:gap-12" suppressHydrationWarning>
-              <div className={cn('landing-lux-stat rounded-xl border border-border/60 bg-background/50 px-6 py-4')} suppressHydrationWarning>
-                <div className="text-2xl font-bold tabular-nums text-foreground" suppressHydrationWarning>12+</div>
-                <div className="text-xs" suppressHydrationWarning>Platforms supported</div>
-              </div>
-              <div className={cn('landing-lux-stat rounded-xl border border-border/60 bg-background/50 px-6 py-4')} suppressHydrationWarning>
-                <div className="text-2xl font-bold tabular-nums text-foreground" suppressHydrationWarning>24/7</div>
-                <div className="text-xs" suppressHydrationWarning>Content automation</div>
-              </div>
-              <div className={cn('landing-lux-stat rounded-xl border border-border/60 bg-background/50 px-6 py-4')} suppressHydrationWarning>
-                <div className="text-2xl font-bold tabular-nums text-foreground" suppressHydrationWarning>GPU</div>
-                <div className="text-xs" suppressHydrationWarning>Accelerated generation</div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <LandingWaitlistSection />
-
-        <section className="border-t border-border py-16" suppressHydrationWarning>
-          <div className="app-page-shell max-w-2xl space-y-5 text-center" suppressHydrationWarning>
-            <h2 className="text-2xl font-semibold tracking-tight">Ready for early access?</h2>
-            <Button
-              asChild
-              size="lg"
-              className="shadow-[0_0_36px_-10px_oklch(0.55_0.2_280/0.5)] transition-shadow duration-500 hover:shadow-[0_0_48px_-8px_oklch(0.62_0.22_290/0.6)]"
-            >
-              <Link href="#waitlist">Join the beta waitlist</Link>
+            <Button asChild size="lg" className="mt-6">
+              <Link href="/auth">Continue to Jobryn</Link>
             </Button>
           </div>
         </section>
-        <MarketingFooter />
-      </div>
+      </main>
+      <MarketingFooter />
     </div>
   )
 }
