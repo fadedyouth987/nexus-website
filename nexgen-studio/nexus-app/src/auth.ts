@@ -4,7 +4,6 @@ import { createClient } from '@supabase/supabase-js'
 import type { JWT } from 'next-auth/jwt'
 import { requireSupabaseAnonKey, requireSupabaseUrl } from '@/lib/supabase/env'
 
-const DEFAULT_AUTH_SECRET = 'your-secret-key-change-this'
 const DEFAULT_ACCESS_TOKEN_TTL_SECONDS = 60 * 60
 const ACCESS_TOKEN_REFRESH_BUFFER_SECONDS = 30
 
@@ -56,7 +55,8 @@ function resolveAccessTokenExpiry(expiresAt?: number | null, expiresIn?: number 
 }
 
 function getAuthSecret() {
-  return process.env.NEXTAUTH_SECRET || DEFAULT_AUTH_SECRET
+  const secret = process.env.NEXTAUTH_SECRET?.trim()
+  return secret && secret.length >= 32 ? secret : undefined
 }
 
 function createSupabaseAuthClient() {
