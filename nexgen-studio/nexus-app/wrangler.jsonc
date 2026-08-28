@@ -17,6 +17,20 @@
       "service": "jobryn"
     }
   ],
+  "vars": {
+    "NEXT_PUBLIC_APP_URL": "https://jobryn.org",
+    "NEXT_PUBLIC_SITE_URL": "https://jobryn.org",
+    "NEXTAUTH_URL": "https://jobryn.org",
+    "NEXT_PUBLIC_SUPABASE_URL": "https://pmqtkcenovlwshurglkp.supabase.co",
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_H7ggm7ASPc-HgDQdMIBWeQ__9GCzVus",
+    "SUPABASE_URL": "https://pmqtkcenovlwshurglkp.supabase.co"
+  },
+  "secrets": {
+    "required": [
+      "NEXTAUTH_SECRET",
+      "SUPABASE_SERVICE_ROLE_KEY"
+    ]
+  },
   "observability": {
     "enabled": true
   },
