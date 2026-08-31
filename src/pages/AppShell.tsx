@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import {
   BarChart3, Bell, Bot, BriefcaseBusiness, CalendarDays, ChevronDown, CircleDollarSign,
   ContactRound, CreditCard, FileCheck2, FileText, Home, Inbox, KeyRound, LibraryBig,
-  LogOut, Menu, MessageSquareMore, ReceiptText, Settings, ShieldCheck,
+  LogOut, Menu, ReceiptText, Settings, ShieldCheck,
   Sparkles, Users, Workflow, X, Star, PlugZap
 } from 'lucide-react';
 import { useAuth } from '../app/auth';

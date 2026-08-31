@@ -1,5 +1,5 @@
 import React from 'react';
-import { AuthProvider, useAuth } from './app/auth';
+import { AuthProvider } from './app/auth';
 import { navigate, usePathname } from './app/router';
 import PublicHome from './pages/PublicHome';
 import PricingPage from './pages/PricingPage';
