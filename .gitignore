@@ -1,71 +1,8 @@
-.env
-.env.*
-!.env.example
-.tmp.drivedownload/
 node_modules/
-.next/
-.next.stale/
-dist/
 build/
-.env
-.env.*
-!.env.example
+dist/
+coverage/
+.DS_Store
 *.log
-Thumbs.db
-.DS_Store
-
-# Not part of this repo
-SwarmUI/
-**/SwarmUI/
-
-# --- junk / caches ---
-.npm-cache/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-.DS_Store
-Thumbs.db
-
-# --- Python ---
-venv/
-.venv/
-__pycache__/
-*.pyc
-
-# --- Next.js / Node ---
-node_modules/
-.next/
-.next.stale/
-dist/
-build/
-
-# --- runtime data (do not commit) ---
-nexgen-studio/openclaw-data/credentials/
-nexgen-studio/openclaw-data/sessions/
-
-# --- junk / caches ---
-.npm-cache/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-.DS_Store
-Thumbs.db
-
-# --- Python ---
-venv/
-.venv/
-__pycache__/
-*.pyc
-
-# --- Next.js / Node ---
-node_modules/
-.next/
-.next.stale/
-dist/
-build/
-
-# --- runtime data (do not commit) ---
-nexgen-studio/openclaw-data/credentials/
-nexgen-studio/openclaw-data/sessions/
+.env*
+!.env.example

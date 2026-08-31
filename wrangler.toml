@@ -1,0 +1,6 @@
+name = "jobryn"
+compatibility_date = "2026-08-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Pages build output
+pages_build_output_dir = "dist"

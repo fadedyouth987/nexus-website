@@ -1,24 +1,47 @@
-# Nexgen Studio (monorepo)
+# Jobryn — AI Revenue Operating System
 
-This repository contains tools and the Next.js application used by Nexgen Studio.
+Jobryn is the canonical SaaS project for service businesses: capture enquiries, respond quickly, manage customers and jobs, quote, invoice, take payments, automate follow-up, collect reviews, and measure attributed revenue.
 
-High-level layout
+## Canonical project rule
 
-- `nexgen-studio/` — main application and services (Next.js app, worker, infra, scripts).
-- `openclaw-data/` — OpenClaw gateway, credentials, and runtime data.
-- `scripts/` — repository-level helper scripts for setup and dev.
-- `chat.mjs` — small utility script (see root package.json).
+This repository is **Jobryn only**. Campaign/Launchpad, Nexus, Vantory prototypes, and other projects are separate and must not be merged into this codebase unless an explicit migration is approved.
 
-Quick start
+- Source of truth: this repository
+- Production branch: `main`
+- Cloudflare project/Worker name: `jobryn`
+- Production domain: `jobryn.org`
+- Database: Supabase Postgres
+- Billing: Stripe
 
-1. Open the app folder: `nexgen-studio/nexus-app`.
-2. Install dependencies: `npm install` (run inside that folder).
-3. Run dev: `npm run dev` or `npm run dev:web`.
+See [`PROJECT_STATE.md`](./PROJECT_STATE.md) before making changes.
 
-Where to look first
+## Stack
 
-- Application entry and Next configuration: `nexgen-studio/nexus-app`.
-- Worker and background tasks: `nexgen-studio/nexus-app/worker`.
-- Infra and local deployment helpers: `nexgen-studio/nexus-app/infra` and `nexgen-studio/nexus-app/scripts`.
+- React 19 + TypeScript + Vite
+- Node/Express API
+- Supabase Auth + Postgres + RLS
+- Stripe subscriptions and webhooks
+- Cloudflare for DNS/static deployment and edge infrastructure
 
-For a concise map of the Next.js app's source tree, see `nexgen-studio/nexus-app/src/README.md`.
+## Local development
+
+```bash
+npm install
+npm run dev
+```
+
+## Verification
+
+```bash
+npm run typecheck
+npm run security:check
+npm run build
+```
+
+## Deployment
+
+1. Push changes to `main`.
+2. Cloudflare deploys from this repository.
+3. Do not manually deploy a different local folder as Jobryn production.
+
+See [`CLOUDFLARE_DEPLOY.md`](./CLOUDFLARE_DEPLOY.md) and [`PRODUCTION_SETUP.md`](./PRODUCTION_SETUP.md).

@@ -1,8 +1,0 @@
-onlyBuiltDependencies:
-  - esbuild
-  - msgpackr-extract
-  - msw
-  - sharp
-  - supabase
-  - unrs-resolver
-  - workerd
