@@ -19,7 +19,7 @@ The following are separate projects and must not be copied, merged, or reintrodu
 
 - Campaign / Campaign OS
 - Launchpad.ai
-- Nexus / Nexus.OS / nexus-website historical code
+- Nexus / Nexus.OS / historical Nexus code
 - Other unrelated prototypes
 
 If old code is useful, migrate only the specific capability after confirming it belongs to Jobryn. Never wholesale-merge an old project.
@@ -39,3 +39,7 @@ Do not treat a random laptop folder, ZIP, Cloudflare editor copy, or old chat at
 5. Run the available verification commands.
 6. Commit/push to `main`.
 7. Verify Cloudflare deployed that commit.
+
+## Historical safety copy
+
+The pre-Jobryn Nexus tree is preserved on branch `archive/nexus-before-jobryn-2026-08-31`. Do not use that branch for Jobryn development or deployment.
